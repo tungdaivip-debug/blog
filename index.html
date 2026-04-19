@@ -974,6 +974,246 @@
         initInitial();
         isPlaying = true; // Cho phép chạy background mờ
         requestAnimationFrame(animate);
+        // ================= ADDICTIVE ENGINE (SAFE) =================
+
+// ===== STATE =====
+let AE = {
+    lastEvent: 0,
+    delay: 5000 + Math.random() * 10000,
+
+    chosen: null,
+    ripple: null,
+    nearMiss: null,
+    sync: null,
+
+    ghost: [],
+    pattern: null,
+    patternTimer: 0,
+
+    memory: null,
+    memoryTimer: 0,
+
+    cursor: {x:0,y:0},
+    pending: null,
+    rewardTimer: 0,
+
+    profile: {clicks:0,last:0,avg:0,zones:[]},
+    predicted: null,
+    predictTimer: 0
+};
+
+// ===== TRACK INPUT =====
+canvas.addEventListener('pointermove', (e)=>{
+    AE.cursor = screenToWorld(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('pointerdown', ()=>{
+    let now = performance.now();
+
+    if (AE.profile.last > 0) {
+        let d = now - AE.profile.last;
+        AE.profile.avg = AE.profile.avg * 0.7 + d * 0.3;
+    }
+
+    AE.profile.last = now;
+    AE.profile.clicks++;
+
+    AE.profile.zones.push({...AE.cursor});
+    if (AE.profile.zones.length > 20) AE.profile.zones.shift();
+
+    if (Math.random() < 0.7) {
+        AE.pending = {...AE.cursor};
+        AE.rewardTimer = 1000 + Math.random()*2000;
+    }
+});
+
+// ===== EVENT =====
+function AE_trigger() {
+    let r = Math.random();
+
+    if (r < 0.2 && creatures.length) {
+        AE.chosen = creatures[Math.floor(Math.random()*creatures.length)];
+    }
+
+    if (r < 0.4) {
+        AE.ripple = {
+            x: cameraX + (Math.random()-0.5)*200,
+            y: cameraY + (Math.random()-0.5)*200,
+            radius:0,max:200
+        };
+    }
+
+    if (r < 0.55 && creatures.length>10) {
+        let c1 = creatures[Math.floor(Math.random()*creatures.length)];
+        let c2 = creatures[Math.floor(Math.random()*creatures.length)];
+        AE.nearMiss = {c1,c2};
+    }
+
+    if (r < 0.7 && creatures.length>20) {
+        AE.sync = [];
+        for(let i=0;i<10;i++){
+            AE.sync.push(creatures[Math.floor(Math.random()*creatures.length)]);
+        }
+    }
+
+    if (Math.random()<0.15){
+        let t = ["Đã từng xảy ra...","Không phải lần đầu","Bạn vừa bỏ lỡ gì đó"];
+        AE.memory = t[Math.floor(Math.random()*t.length)];
+        AE.memoryTimer = 2000;
+    }
+
+    if (Math.random()<0.2 && creatures.length){
+        let c = creatures[Math.floor(Math.random()*creatures.length)];
+        AE.pattern = {x:c.x,y:c.y};
+        AE.patternTimer = 300;
+    }
+}
+
+// ===== HOOK ANIMATE (KHÔNG PHÁ CODE CŨ) =====
+const AE_oldAnimate = animate;
+animate = function(time){
+
+    AE_oldAnimate(time);
+
+    // trigger
+    if (time - AE.lastEvent > AE.delay){
+        AE_trigger();
+        AE.lastEvent = time;
+        AE.delay = 5000 + Math.random()*10000;
+    }
+
+    // ghost
+    if (Math.random()<0.15 && creatures.length){
+        let c = creatures[Math.floor(Math.random()*creatures.length)];
+        AE.ghost.push({x:c.x,y:c.y,life:1});
+    }
+    AE.ghost.forEach(g=>g.life-=0.04);
+    AE.ghost = AE.ghost.filter(g=>g.life>0);
+
+    // delayed reward
+    if (AE.pending){
+        AE.rewardTimer -=16;
+        if (AE.rewardTimer<=0){
+            AE.ripple = {
+                x: AE.pending.x*TILE_SIZE,
+                y: AE.pending.y*TILE_SIZE,
+                radius:0,max:150
+            };
+            AE.pending=null;
+        }
+    }
+
+    // prediction
+    if (Math.random()<0.05 && AE.profile.zones.length>5){
+        let z = AE.profile.zones[Math.floor(Math.random()*AE.profile.zones.length)];
+        AE.predicted = z;
+        AE.predictTimer = 800;
+    }
+
+    if (AE.predictTimer>0){
+        AE.predictTimer-=16;
+        if (AE.predictTimer<=0 && AE.predicted){
+            AE.ripple = {
+                x: AE.predicted.x*TILE_SIZE,
+                y: AE.predicted.y*TILE_SIZE,
+                radius:0,max:120
+            };
+            AE.predicted=null;
+        }
+    }
+
+    // timers
+    if (AE.memoryTimer>0){
+        AE.memoryTimer-=16;
+        if (AE.memoryTimer<=0) AE.memory=null;
+    }
+
+    if (AE.patternTimer>0){
+        AE.patternTimer-=16;
+        if (AE.patternTimer<=0) AE.pattern=null;
+    }
+
+    // ===== DRAW OVERLAY =====
+    ctx.save();
+
+    // ripple
+    if (AE.ripple){
+        AE.ripple.radius+=4;
+        ctx.beginPath();
+        ctx.arc(AE.ripple.x,AE.ripple.y,AE.ripple.radius,0,Math.PI*2);
+        ctx.strokeStyle="rgba(255,255,255,0.2)";
+        ctx.stroke();
+        if (AE.ripple.radius>AE.ripple.max) AE.ripple=null;
+    }
+
+    // near miss
+    if (AE.nearMiss){
+        ctx.strokeStyle="rgba(255,100,100,0.4)";
+        ctx.beginPath();
+        ctx.moveTo(AE.nearMiss.c1.x*TILE_SIZE,AE.nearMiss.c1.y*TILE_SIZE);
+        ctx.lineTo(AE.nearMiss.c2.x*TILE_SIZE,AE.nearMiss.c2.y*TILE_SIZE);
+        ctx.stroke();
+    }
+
+    // ghost
+    AE.ghost.forEach(g=>{
+        ctx.globalAlpha=g.life*0.3;
+        ctx.fillStyle="white";
+        ctx.fillRect(g.x*TILE_SIZE,g.y*TILE_SIZE,3,3);
+        ctx.globalAlpha=1;
+    });
+
+    // pattern
+    if (AE.pattern){
+        ctx.strokeStyle="rgba(255,255,255,0.15)";
+        ctx.beginPath();
+        let r=25;
+        for(let i=0;i<6;i++){
+            let a=i/6*Math.PI*2;
+            ctx.lineTo(
+                AE.pattern.x*TILE_SIZE+Math.cos(a)*r,
+                AE.pattern.y*TILE_SIZE+Math.sin(a)*r
+            );
+        }
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    // text
+    if (AE.memory){
+        ctx.fillStyle="rgba(255,255,255,0.8)";
+        ctx.font="14px sans-serif";
+        ctx.textAlign="center";
+        ctx.fillText(AE.memory,canvas.width/2,60);
+    }
+
+    ctx.restore();
+};
+
+// ===== DRAW HOOK =====
+const AE_oldDraw = Creature.prototype.draw;
+Creature.prototype.draw = function(ctx,progress){
+
+    if (this === AE.chosen){
+        ctx.save();
+        ctx.shadowBlur=20;
+        ctx.shadowColor="white";
+        AE_oldDraw.call(this,ctx,progress);
+        ctx.restore();
+        return;
+    }
+
+    if (AE.sync && AE.sync.includes(this)){
+        ctx.save();
+        ctx.shadowBlur=10;
+        ctx.shadowColor="cyan";
+        AE_oldDraw.call(this,ctx,progress);
+        ctx.restore();
+        return;
+    }
+
+    AE_oldDraw.call(this,ctx,progress);
+};
 
     </script>
 </body>
