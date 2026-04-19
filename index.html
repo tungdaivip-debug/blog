@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mô Phỏng Quần Xã Sinh Vật L</title>
+    <title>TeTe Universe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Tối ưu cho Mobile Game */
         body { 
             margin: 0; 
             overflow: hidden; 
@@ -16,7 +15,7 @@
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
-            overscroll-behavior: none; /* Thay touch-action: none bằng overscroll-behavior để không chặn thanh trượt/cuộn menu */
+            overscroll-behavior: none;
         }
         
         canvas { 
@@ -24,10 +23,9 @@
             position: absolute;
             top: 0; left: 0;
             z-index: 0;
-            touch-action: none; /* Chỉ chặn thao tác cuộn web trên khu vực vẽ game */
+            touch-action: none;
         }
 
-        /* Hiệu ứng kính mờ cho UI */
         .glass {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(12px);
@@ -41,36 +39,28 @@
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Animation chuyển màn hình */
         .fade-enter { animation: fadeIn 0.3s ease-out forwards; }
         .fade-exit { animation: fadeOut 0.3s ease-in forwards; pointer-events: none; }
-        
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.05); } }
 
-        /* Animation Bottom Sheet */
         .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
 
-        /* Tùy chỉnh thanh trượt */
         input[type=range] {
             -webkit-appearance: none;
             appearance: none;
             width: 100%;
             background: transparent;
-            touch-action: pan-x; /* Cho phép trình duyệt nhận diện thao tác vuốt ngang trên thanh trượt */
-            margin: 6px 0; /* Ép gọn khoảng cách thanh trượt */
+            touch-action: pan-x;
+            margin: 6px 0;
         }
-        input[type=range]:focus {
-            outline: none;
-        }
-        /* Webkit (Chrome, Safari, Edge, Mobile) */
+        input[type=range]:focus { outline: none; }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 20px; width: 20px; /* Thu nhỏ thanh trượt một chút */
+            height: 20px; width: 20px;
             border-radius: 50%;
             background: #2dd4bf;
             cursor: pointer;
@@ -84,7 +74,6 @@
             background: rgba(255, 255, 255, 0.2); 
             border-radius: 4px;
         }
-        /* Firefox */
         input[type=range]::-moz-range-track {
             width: 100%; height: 8px;
             cursor: pointer;
@@ -100,9 +89,19 @@
             box-shadow: 0 0 8px rgba(0,0,0,0.6);
         }
         
-        /* Hiệu ứng làm mờ canvas khi ở menu */
         .canvas-blur { filter: blur(8px) brightness(0.6); transition: filter 0.5s ease; }
         .canvas-clear { filter: blur(0px) brightness(1); transition: filter 0.5s ease; }
+
+        /* Icon khóa */
+        .locked-overlay {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,0.6);
+            border-radius: inherit;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+            cursor: not-allowed;
+            z-index: 10;
+        }
     </style>
 </head>
 <body>
@@ -110,11 +109,21 @@
     <!-- LỚP NỀN CANVAS GAME -->
     <canvas id="worldCanvas" class="canvas-blur"></canvas>
 
+    <!-- UI META-GAME: Điểm DNA -->
+    <div id="dnaUI" class="absolute top-4 left-4 z-40 hidden flex items-center gap-2 glass px-4 py-2 rounded-2xl border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+        <span class="text-2xl">🧬</span>
+        <div class="flex flex-col">
+            <span class="text-[9px] uppercase font-bold text-yellow-400 tracking-wider leading-none">Điểm DNA</span>
+            <span id="dnaCountDisplay" class="text-xl font-black text-white leading-none">0</span>
+        </div>
+    </div>
+
     <!-- MÀN HÌNH CHÍNH (MAIN MENU) -->
     <div id="mainMenu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-sm">
         <div class="text-center mb-10 fade-enter">
-            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500 drop-shadow-lg mb-2">Tete universe</h1>
-            <p class="text-slate-300 text-sm tracking-widest uppercase">Mô phỏng sinh mệnh nhân tạo</p>
+            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500 drop-shadow-lg mb-2">TeTe Universe</h1>
+            <div class="text-teal-300 font-bold mb-1 tracking-widest uppercase">Kỷ Nguyên Đột Biến</div>
+            <p class="text-slate-400 text-xs">Mô phỏng Sinh thái, Tiến hóa & Lựa chọn Tự nhiên</p>
         </div>
 
         <div class="flex flex-col gap-4 w-64 fade-enter" style="animation-delay: 0.1s;">
@@ -124,12 +133,12 @@
             </button>
             
             <button onclick="openSetup()" class="glass text-white font-semibold py-3 rounded-2xl active:scale-95 transition-transform border border-slate-600">
-                ⚙️ Thiết lập ban đầu
+                ⚙️ Thiết lập Thế Giới
             </button>
             
             <div class="text-center mt-8 text-xs text-slate-400">
-                <p>Kéo để di chuyển • Vuốt để Zoom</p>
-                <p>Chạm để thả sinh vật</p>
+                <p>Khám phá hệ thống <b>Động vật ăn thịt</b> và <b>Tiến hóa</b></p>
+                <p>Tích lũy DNA để làm chủ Thiên tai</p>
             </div>
         </div>
     </div>
@@ -137,7 +146,7 @@
     <!-- GIAO DIỆN TRONG GAME (HUD) -->
     <div id="gameHUD" class="absolute inset-0 z-40 hidden pointer-events-none flex-col justify-between">
         
-        <!-- Top Bar (Thông số) - Thu gọn -->
+        <!-- Top Bar -->
         <div class="w-full glass rounded-b-2xl p-2 px-4 flex justify-between items-center pointer-events-auto shadow-md fade-enter">
             <button onclick="exitToMenu()" class="w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center active:scale-90 transition border border-slate-600">
                 <span class="text-sm">🏠</span>
@@ -146,17 +155,23 @@
             <div class="flex flex-col items-center flex-1">
                 <div class="flex gap-4">
                     <div class="text-center">
-                        <div class="text-[9px] text-teal-400 uppercase font-bold tracking-wider">Sinh vật</div>
+                        <div class="text-[9px] text-teal-400 uppercase font-bold tracking-wider">Ăn Cỏ</div>
                         <div id="popCount" class="text-lg font-black text-white leading-none">0</div>
                     </div>
                     <div class="w-px bg-slate-600"></div>
                     <div class="text-center">
-                        <div class="text-[9px] text-purple-400 uppercase font-bold tracking-wider">Quần xã</div>
-                        <div id="colonyCount" class="text-lg font-black text-white leading-none">0</div>
+                        <div class="text-[9px] text-red-400 uppercase font-bold tracking-wider">Ăn Thịt</div>
+                        <div id="carnivoreCountDisplay" class="text-lg font-black text-red-200 leading-none">0</div>
+                    </div>
+                     <div class="w-px bg-slate-600"></div>
+                    <div class="text-center">
+                        <div class="text-[9px] text-green-400 uppercase font-bold tracking-wider">Zombie</div>
+                        <div id="zombieCount" class="text-lg font-black text-white leading-none">0</div>
                     </div>
                 </div>
-                <div class="text-[8px] text-gray-400 mt-0.5 bg-slate-800/50 px-2 py-0.5 rounded-full">
-                    Gió: <span id="windDisplay" class="text-cyan-300">Tĩnh lặng</span>
+                <div class="text-[8px] text-gray-400 mt-0.5 bg-slate-800/50 px-2 py-0.5 rounded-full flex gap-2">
+                    <span>Quần xã: <b id="colonyCount" class="text-purple-300">0</b></span>
+                    <span>Thế hệ Max: <b id="maxGenDisplay" class="text-yellow-300">1</b></span>
                 </div>
             </div>
 
@@ -165,33 +180,34 @@
             </button>
         </div>
 
-        <!-- Bottom Controls (Thanh Dock nổi ngang đáy màn hình) -->
+        <!-- Bottom Controls Dock -->
         <div class="absolute bottom-6 w-full flex justify-center pointer-events-none fade-enter">
             <div class="flex items-center gap-2 glass-solid px-3 py-2 rounded-3xl pointer-events-auto shadow-2xl border border-slate-600">
-                <!-- Nút Cài đặt -->
-                <button onclick="openSettings()" class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center active:scale-90 transition text-lg border border-slate-600">🎛️</button>
+                <button onclick="openSettings()" class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center active:scale-90 transition text-lg border border-slate-600 relative">
+                    🎛️
+                </button>
                 
-                <!-- Nút Kỷ nguyên -->
-                <button id="btnEra" class="w-10 h-10 rounded-xl bg-fuchsia-900/50 flex items-center justify-center active:scale-90 transition text-lg border border-fuchsia-500/50">🌌</button>
+                <!-- Nút Shop / Kỷ nguyên -->
+                <button onclick="openShop()" class="w-10 h-10 rounded-xl bg-yellow-900/40 flex items-center justify-center active:scale-90 transition text-lg border border-yellow-500/50 relative">
+                    🛒
+                </button>
 
-                <!-- Nút Hành động trung tâm nổi lên (Nổi bật) -->
+                <!-- Nút Sinh sản trung tâm -->
                 <button onclick="spawnRandomBatch(event)" class="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center active:scale-90 transition border-2 border-indigo-400 text-2xl shadow-[0_0_15px_rgba(79,70,229,0.5)] mx-1 -translate-y-2">🧬</button>
 
                 <!-- Nút Bút vẽ -->
                 <button onclick="openTools()" class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center active:scale-90 transition text-lg border border-slate-600 relative">🖌️
                     <div id="brushIndicator" class="absolute -top-1 -right-1 w-4 h-4 bg-teal-500 rounded-full text-[9px] flex items-center justify-center font-bold border border-slate-800">1</div>
                 </button>
-                
-                <!-- Nút Xoá -->
                 <button onclick="clearWorld()" class="w-10 h-10 rounded-xl bg-rose-900/50 flex items-center justify-center active:scale-90 transition text-lg border border-rose-500/50">🗑️</button>
             </div>
         </div>
     </div>
 
-    <!-- BOTTOM SHEETS (Menu trượt từ dưới lên) -->
+    <!-- BOTTOM SHEETS -->
     <div id="overlay" class="absolute inset-0 bg-black/60 z-50 hidden opacity-0 transition-opacity duration-300" onclick="closeAllPanels()"></div>
 
-    <!-- 1. Bảng Cài Đặt (Settings) - Thu gọn -->
+    <!-- Bảng Cài Đặt -->
     <div id="settingsPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 max-h-[85vh] overflow-y-auto transform translate-y-full pb-6">
         <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-1"></div>
         <div class="relative w-full flex justify-center items-center mb-1">
@@ -200,39 +216,25 @@
         </div>
         
         <div class="space-y-3">
-            <!-- Tốc độ -->
             <div>
                 <div class="flex justify-between text-[11px] text-gray-400">
                     <span>Rùa 🐢</span><span class="font-bold text-teal-400">Tốc độ thời gian</span><span>Thỏ 🐇</span>
                 </div>
                 <input type="range" id="speedSlider" min="1" max="100" value="72">
             </div>
-
-            <!-- Giới hạn quần xã -->
             <div>
                 <div class="flex justify-between text-[11px] text-gray-400">
                     <span class="font-bold text-purple-400">Giới hạn số lượng bầy</span>
-                    <span id="limitDisplay" class="text-white font-bold">30</span>
+                    <span id="limitDisplay" class="text-white font-bold">50</span>
                 </div>
-                <input type="range" id="limitSlider" min="5" max="200" value="30">
+                <input type="range" id="limitSlider" min="10" max="300" value="50">
             </div>
-
-            <!-- Phạm vi -->
             <div>
                 <div class="flex justify-between text-[11px] text-gray-400">
                     <span class="font-bold text-pink-400">Phạm vi nối bầy (ô)</span>
                     <span id="distanceDisplay" class="text-white font-bold">15</span>
                 </div>
                 <input type="range" id="distanceSlider" min="2" max="50" value="15">
-            </div>
-
-            <!-- Tính bầy đàn -->
-            <div>
-                <div class="flex justify-between text-[11px] text-gray-400">
-                    <span class="font-bold text-blue-400">Tập tính bầy đàn (%)</span>
-                    <span id="flockDisplay" class="text-white font-bold">40</span>
-                </div>
-                <input type="range" id="flockSlider" min="0" max="100" value="40">
             </div>
         </div>
 
@@ -241,38 +243,109 @@
                 <span class="font-semibold text-xs">Tự động sinh ngẫu nhiên</span>
                 <input type="checkbox" id="autoSpawnCheck" checked class="w-4 h-4 accent-teal-500">
             </label>
-            <label class="flex items-center justify-between p-2.5 rounded-xl bg-red-900/20 border border-red-900/50 active:bg-red-900/40 transition">
-                <span class="font-semibold text-xs text-red-300">Di chuyển 100% hỗn loạn</span>
-                <input type="checkbox" id="chaosCheck" class="w-4 h-4 accent-red-500">
-            </label>
         </div>
-
-        <!-- Nút Đóng -->
-        <button onclick="closeAllPanels()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-700 text-white font-bold border border-slate-600 active:bg-slate-600 transition">
-            Đóng Cài Đặt
+        
+        <button id="btnEra" class="mt-2 w-full py-2.5 rounded-xl bg-fuchsia-900/50 text-fuchsia-200 font-bold border border-fuchsia-500/50 active:bg-fuchsia-900 transition">
+            🌌 Kỷ Nguyên Hỗn Loạn Ngẫu Nhiên
         </button>
     </div>
 
-    <!-- 2. Bảng Công Cụ Bút Vẽ (Tools) - Thu gọn -->
-    <div id="toolsPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 transform translate-y-full pb-6">
+    <!-- Bảng DNA Shop (Tiến Hóa & Mở Khóa) -->
+    <div id="shopPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 transform translate-y-full pb-6">
         <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-1"></div>
         <div class="relative w-full flex justify-center items-center mb-1">
-            <h2 class="text-lg font-bold text-white">Công Cụ Sáng Tạo</h2>
+            <h2 class="text-lg font-bold text-yellow-400">Cửa Hàng Thần Thánh</h2>
             <button onclick="closeAllPanels()" class="absolute right-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white active:scale-90 transition">✕</button>
         </div>
         
-        <div class="grid grid-cols-3 gap-2">
-            <button onclick="setBrush(0)" id="brush0" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-teal-500 bg-teal-500/20">
-                <span class="text-xl">👆</span>
-                <span class="text-[10px] font-bold">Đơn lẻ</span>
+        <div class="text-center text-sm text-gray-300 mb-2">
+            Sử dụng Điểm DNA 🧬 để mở khóa các Sức mạnh Hủy diệt.
+        </div>
+
+        <div class="space-y-3">
+            <!-- Mục 1: Mở khóa Zombie -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl">🧟</div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lime-400">Virus Zombie</span>
+                        <span class="text-[10px] text-gray-400">Mở khóa công cụ Thả Zombie.</span>
+                    </div>
+                </div>
+                <button id="btnUnlockZombie" onclick="unlockTool('zombie', 500)" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition shadow-lg text-sm">
+                    500 🧬
+                </button>
+            </div>
+
+            <!-- Mục 2: Mở khóa Thiên thạch -->
+            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl">☄️</div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-red-400">Gọi Thiên Thạch</span>
+                        <span class="text-[10px] text-gray-400">Mở khóa công cụ ném Thiên thạch.</span>
+                    </div>
+                </div>
+                <button id="btnUnlockMeteor" onclick="unlockTool('meteor', 1500)" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-lg transition shadow-lg text-sm">
+                    1500 🧬
+                </button>
+            </div>
+            
+             <!-- Mục 3: Mua sinh vật ăn thịt -->
+             <div class="flex items-center justify-between p-3 rounded-xl bg-slate-800 border border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="text-3xl">🐺</div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-red-500">Thả Kẻ Săn Mồi</span>
+                        <span class="text-[10px] text-gray-400">Ép sinh ra 5 sinh vật Ăn Thịt.</span>
+                    </div>
+                </div>
+                <button onclick="buyCarnivores()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg transition shadow-lg text-sm">
+                    300 🧬
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng Công Cụ Mở Rộng -->
+    <div id="toolsPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 transform translate-y-full pb-6">
+        <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-1"></div>
+        <div class="relative w-full flex justify-center items-center mb-1">
+            <h2 class="text-lg font-bold text-white">Bút Vẽ Thần Thánh</h2>
+            <button onclick="closeAllPanels()" class="absolute right-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white active:scale-90 transition">✕</button>
+        </div>
+        
+        <div class="grid grid-cols-4 gap-2">
+            <!-- Hàng 1 -->
+            <button onclick="setBrush(0)" id="brush0" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-teal-500 bg-teal-500/20 transition relative">
+                <span class="text-xl">👆</span><span class="text-[9px] font-bold">Cơ bản</span>
             </button>
-            <button onclick="setBrush(1)" id="brush1" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">💣</span>
-                <span class="text-[10px] font-bold">Bom (50)</span>
+            <button onclick="setBrush(1)" id="brush1" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition relative">
+                <span class="text-xl">💣</span><span class="text-[9px] font-bold">Bom (50)</span>
             </button>
-            <button onclick="setBrush(2)" id="brush2" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">⭕</span>
-                <span class="text-[10px] font-bold">Vòng tròn</span>
+            <button onclick="setBrush(2)" id="brush2" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition relative">
+                <span class="text-xl">⭕</span><span class="text-[9px] font-bold">Vòng</span>
+            </button>
+            <button onclick="setBrush(4)" id="brush4" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition relative">
+                <span class="text-xl">🚧</span><span class="text-[9px] font-bold text-orange-400">Tường</span>
+            </button>
+
+            <!-- Hàng 2: Tính năng sinh tồn -->
+            <button onclick="setBrush(5)" id="brush5" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-green-900/30 active:bg-green-900/50 transition relative">
+                <span class="text-xl">🍀</span><span class="text-[9px] font-bold text-green-400">Cỏ/Thức ăn</span>
+            </button>
+            <button onclick="setBrush(3)" id="brush3" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-purple-900/30 active:bg-purple-900/50 transition relative">
+                <span class="text-xl">🕳️</span><span class="text-[9px] font-bold text-purple-400">Lỗ Đen</span>
+            </button>
+            
+            <!-- Công cụ cần Unlock -->
+            <button onclick="setBrush(6)" id="brush6" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-lime-900/30 active:bg-lime-900/50 transition relative">
+                <span class="text-xl">🧟</span><span class="text-[9px] font-bold text-lime-400">Zombie</span>
+                <div id="lockZombie" class="locked-overlay">🔒</div>
+            </button>
+            <button onclick="setBrush(7)" id="brush7" class="flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 border-transparent bg-red-900/30 active:bg-red-900/50 transition relative">
+                <span class="text-xl">☄️</span><span class="text-[9px] font-bold text-red-400">Thiên Thạch</span>
+                <div id="lockMeteor" class="locked-overlay">🔒</div>
             </button>
         </div>
 
@@ -280,119 +353,162 @@
             <span class="font-bold text-sm text-yellow-400">✨ Bật vệt sáng đuôi</span>
             <input type="checkbox" id="trailCheck" class="w-4 h-4 accent-yellow-500">
         </label>
-
-        <!-- Nút Đóng -->
-        <button onclick="closeAllPanels()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-700 text-white font-bold border border-slate-600 active:bg-slate-600 transition">
-            Đóng Công Cụ
-        </button>
     </div>
 
     <!-- Script Logic Game -->
     <script>
-        // --- QUẢN LÝ UI STATE ---
         const mainMenu = document.getElementById('mainMenu');
         const gameHUD = document.getElementById('gameHUD');
         const overlay = document.getElementById('overlay');
         const settingsPanel = document.getElementById('settingsPanel');
         const toolsPanel = document.getElementById('toolsPanel');
+        const shopPanel = document.getElementById('shopPanel');
+        const dnaUI = document.getElementById('dnaUI');
         const canvas = document.getElementById('worldCanvas');
-        let gameState = 'menu'; // 'menu' | 'playing'
+        let gameState = 'menu';
+
+        // Hệ thống Meta-Game
+        let dnaPoints = 0;
+        let unlockedFeatures = { zombie: false, meteor: false };
+        let maxGenerationReached = 1;
+
+        function addDNA(amount) {
+            dnaPoints += amount;
+            document.getElementById('dnaCountDisplay').innerText = Math.floor(dnaPoints);
+        }
+
+        function unlockTool(feature, cost) {
+            if (dnaPoints >= cost) {
+                dnaPoints -= cost;
+                unlockedFeatures[feature] = true;
+                addDNA(0); // Update UI
+                
+                // Cập nhật UI Shop
+                if(feature === 'zombie') {
+                    document.getElementById('btnUnlockZombie').innerText = 'ĐÃ MỞ';
+                    document.getElementById('btnUnlockZombie').disabled = true;
+                    document.getElementById('btnUnlockZombie').classList.replace('bg-yellow-600', 'bg-gray-600');
+                    document.getElementById('lockZombie').style.display = 'none';
+                }
+                if(feature === 'meteor') {
+                    document.getElementById('btnUnlockMeteor').innerText = 'ĐÃ MỞ';
+                    document.getElementById('btnUnlockMeteor').disabled = true;
+                    document.getElementById('btnUnlockMeteor').classList.replace('bg-yellow-600', 'bg-gray-600');
+                    document.getElementById('lockMeteor').style.display = 'none';
+                }
+            } else {
+                alert("Không đủ điểm DNA!");
+            }
+        }
+        
+        function buyCarnivores() {
+             if (dnaPoints >= 300) {
+                dnaPoints -= 300;
+                addDNA(0);
+                
+                let camWorldX = Math.floor(cameraX / TILE_SIZE);
+                let camWorldY = Math.floor(cameraY / TILE_SIZE);
+                for(let i=0; i<5; i++){
+                    let rx = camWorldX + Math.floor((Math.random() - 0.5) * 20);
+                    let ry = camWorldY + Math.floor((Math.random() - 0.5) * 20);
+                    creatures.push(new Creature(rx, ry, null, false, 1.2, 1, 'carnivore'));
+                }
+                closeAllPanels();
+             } else {
+                 alert("Không đủ điểm DNA!");
+             }
+        }
 
         function startGame() {
             gameState = 'playing';
-            
-            // UI Animations
             mainMenu.classList.replace('fade-enter', 'fade-exit');
             setTimeout(() => {
                 mainMenu.classList.add('hidden');
                 mainMenu.classList.replace('fade-exit', 'fade-enter');
             }, 300);
-
             gameHUD.classList.remove('hidden');
+            dnaUI.classList.remove('hidden');
             canvas.classList.replace('canvas-blur', 'canvas-clear');
-            
-            // Bắt đầu logic nếu đang dừng
             if(!isPlaying) togglePause();
             if(creatures.length === 0) initInitial();
         }
 
         function exitToMenu() {
             gameState = 'menu';
-            if(isPlaying) togglePause(); // Dừng logic khi ra menu
-            
+            if(isPlaying) togglePause();
             gameHUD.classList.add('hidden');
+            dnaUI.classList.add('hidden');
             mainMenu.classList.remove('hidden');
             canvas.classList.replace('canvas-clear', 'canvas-blur');
         }
 
-        function openSetup() {
-            openSettings(); // Mượn luôn bảng setting in-game cho nhanh gọn
-        }
-
-        // --- QUẢN LÝ BOTTOM SHEETS ---
+        function openSetup() { openSettings(); }
         function openPanel(panel) {
             overlay.classList.remove('hidden');
             setTimeout(() => overlay.style.opacity = '1', 10);
-            
-            panel.classList.remove('hidden');
-            panel.classList.remove('slide-down');
+            panel.classList.remove('hidden', 'slide-down');
             panel.classList.add('slide-up');
         }
-
         function closeAllPanels() {
             overlay.style.opacity = '0';
             setTimeout(() => overlay.classList.add('hidden'), 300);
-
-            [settingsPanel, toolsPanel].forEach(panel => {
+            [settingsPanel, toolsPanel, shopPanel].forEach(panel => {
                 if(!panel.classList.contains('hidden')) {
                     panel.classList.replace('slide-up', 'slide-down');
                     setTimeout(() => panel.classList.add('hidden'), 300);
                 }
             });
         }
-
         function openSettings() { closeAllPanels(); openPanel(settingsPanel); }
         function openTools() { closeAllPanels(); openPanel(toolsPanel); }
+        function openShop() { closeAllPanels(); openPanel(shopPanel); }
 
         function setBrush(type) {
+            if (type === 6 && !unlockedFeatures.zombie) return alert("Cần mở khóa trong Cửa hàng Thần thánh!");
+            if (type === 7 && !unlockedFeatures.meteor) return alert("Cần mở khóa trong Cửa hàng Thần thánh!");
+
             brushMode = type;
-            document.getElementById('brushIndicator').innerText = type === 0 ? '1' : (type === 1 ? 'B' : 'O');
-            // Cập nhật UI nút chọn
-            for(let i=0; i<=2; i++) {
+            let iconMap = {0:'1', 1:'B', 2:'O', 3:'🕳️', 4:'🚧', 5:'🍀', 6:'🧟', 7:'☄️'};
+            document.getElementById('brushIndicator').innerText = iconMap[type];
+            
+            for(let i=0; i<=7; i++) {
                 const btn = document.getElementById('brush' + i);
-                if(i === type) {
-                    btn.classList.add('border-teal-500', 'bg-teal-500/20');
-                    btn.classList.remove('border-transparent', 'bg-slate-800');
-                } else {
-                    btn.classList.remove('border-teal-500', 'bg-teal-500/20');
-                    btn.classList.add('border-transparent', 'bg-slate-800');
+                if(btn) {
+                    if(i === type) {
+                        btn.classList.add('border-teal-500');
+                        btn.classList.remove('border-transparent');
+                    } else {
+                        btn.classList.remove('border-teal-500');
+                        btn.classList.add('border-transparent');
+                    }
                 }
             }
-            closeAllPanels();
+            if(type < 3 || type === 5 || type === 6) closeAllPanels(); 
         }
 
-        // --- LOGIC MÔ PHỎNG CORE ---
         const ctx = canvas.getContext('2d');
-        
         const TILE_SIZE = 10; 
         let LOGIC_TICK_RATE = 150; 
-        let colonyDeathLimit = 30; 
+        let colonyDeathLimit = 50; 
         let colonyDistance = 15; 
         let flockTendency = 0.4; 
         let isChaosMode = false; 
-        
         let isTrailMode = false;
         let brushMode = 0; 
-        let isFastForward = false; 
         
         let cosmicWindX = 0;
         let cosmicWindY = 0;
 
         let creatures = [];
         let particles = [];
-        let activeColonyCount = 0;
+        let walls = new Map(); 
+        let foods = new Map(); 
+        let meteors = []; 
         
-        // Camera & Viewport
+        let activeColonyCount = 0;
+        let zombieCount = 0;
+        let carnivoreCount = 0;
+        
         let cameraX = 0; 
         let cameraY = 0;
         let zoom = 1;
@@ -400,10 +516,12 @@
         let lastPanX = 0;
         let lastPanY = 0;
 
-        let isPlaying = false; // Bắt đầu ở chế độ Pause (Menu)
+        let isPlaying = false; 
         let isDragging = false;
         let autoSpawnEnabled = true;
         let lastLogicTime = performance.now();
+
+        let currentTouchWorldPos = null;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -423,18 +541,70 @@
         }
 
         class Creature {
-            constructor(x, y, color = null) {
+            // Thêm type: 'herbivore' (ăn cỏ), 'carnivore' (ăn thịt)
+            constructor(x, y, color = null, isZombie = false, parentSize = 1.0, generation = 1, type = 'herbivore') {
                 this.x = x; this.y = y;
                 this.lastX = x; this.lastY = y;
                 this.rotation = Math.floor(Math.random() * 4); 
-                this.color = color || `hsl(${Math.random() * 360}, 100%, 70%)`;
+                
+                this.type = type;
+                this.isZombie = isZombie;
+                
+                if (isZombie) {
+                    this.color = '#84cc16'; // Xanh lá mạ
+                } else if (this.type === 'carnivore') {
+                    this.color = '#dc2626'; // Đỏ máu
+                } else {
+                    this.color = color || `hsl(${Math.random() * 360}, 100%, 70%)`;
+                }
+                
+                // Tiến Hóa: Kích thước & Thế hệ
+                this.generation = generation;
+                if(generation > maxGenerationReached) {
+                    maxGenerationReached = generation;
+                    document.getElementById('maxGenDisplay').innerText = maxGenerationReached;
+                    addDNA(5); // Thưởng DNA khi lên thế hệ mới
+                }
+
+                // Kẻ ăn thịt thường to hơn một chút
+                this.sizeScale = isZombie ? 1.0 : (this.type === 'carnivore' ? Math.max(1.1, parentSize) : parentSize);
+                this.age = 0; 
+                this.isKing = false; 
+                
                 this.cooldown = Math.floor(Math.random() * 20); 
                 this.colonyId = null; 
                 this.hasColony = false;
-                this.stepDelay = Math.floor(Math.random() * 3) + 1; 
+                
+                // Tốc độ: Nhỏ đi nhanh, To đi chậm. Ăn thịt (Carnivore) thường đi nhanh hơn 1 chút
+                let baseDelay = Math.floor(Math.random() * 3) + 1;
+                if (this.sizeScale > 1.3) baseDelay += 2; 
+                if (this.sizeScale < 0.8) baseDelay = 1;  
+                if (this.type === 'carnivore') baseDelay = Math.max(1, baseDelay - 1); 
+
+                this.stepDelay = isZombie ? 1 : baseDelay; 
                 this.stepTimer = 0;
-                this.isHyper = Math.random() < 0.15; 
+                
+                // Carnivore rất năng động
+                this.isHyper = isZombie ? true : (this.type === 'carnivore' ? true : (Math.random() < 0.15 && this.sizeScale < 1.0)); 
                 this.shapeType = Math.random() < 0.5 ? 'L' : 'J'; 
+                
+                // Ăn thịt mau đói hơn (Máu ít hơn)
+                let baseHealth = this.type === 'carnivore' ? 300 : 1000;
+                this.health = isZombie ? 150 : (baseHealth * this.sizeScale); 
+                
+                this.toBeDeleted = false;
+            }
+
+            infect() {
+                if(this.isZombie) return;
+                this.isZombie = true;
+                this.color = '#84cc16'; 
+                this.stepDelay = 1;
+                this.isHyper = true;
+                this.sizeScale = 1.0; 
+                this.health = 150; 
+                this.isKing = false; 
+                for(let p=0; p<4; p++) particles.push(new Particle(this.x, this.y, '#84cc16'));
             }
 
             getCells(cx, cy, rot) {
@@ -455,9 +625,19 @@
 
             getOccupiedCells() { return this.getCells(this.x, this.y, this.rotation); }
 
-            move(occupiedMap) {
+            move(occupiedMap, allCreatures) {
                 if (this.cooldown > 0) this.cooldown--;
-                
+                this.age++; 
+                // Cơ chế chết già / chết đói
+                this.health--;
+                if(this.health <= 0) {
+                    this.toBeDeleted = true;
+                    // Tạo xác chết / bụi
+                    let deathColor = this.isZombie ? '#3f6212' : (this.type==='carnivore' ? '#7f1d1d' : '#475569');
+                    for (let p = 0; p < 5; p++) particles.push(new Particle(this.x, this.y, deathColor)); 
+                    return;
+                }
+
                 this.stepTimer++;
                 if (this.stepTimer < this.stepDelay) {
                     this.lastX = this.x; this.lastY = this.y;
@@ -469,31 +649,58 @@
                 let dx = Math.floor(Math.random() * 3) - 1; 
                 let dy = Math.floor(Math.random() * 3) - 1; 
 
-                if (!isChaosMode && this.hasColony && Math.random() < flockTendency) {
-                    let distToCenter = Math.max(Math.abs(this.colonyCenterX - this.x), Math.abs(this.colonyCenterY - this.y));
-                    if (distToCenter > 2) {
-                        if (Math.random() < 0.7) dx = this.colonyCenterX > this.x ? 1 : (this.colonyCenterX < this.x ? -1 : 0);
-                        if (Math.random() < 0.7) dy = this.colonyCenterY > this.y ? 1 : (this.colonyCenterY < this.y ? -1 : 0);
-                    } else if (distToCenter < 1.5) {
-                        if (Math.random() < 0.7) dx = this.colonyCenterX > this.x ? -1 : (this.colonyCenterX < this.x ? 1 : dx);
-                        if (Math.random() < 0.7) dy = this.colonyCenterY > this.y ? -1 : (this.colonyCenterY < this.y ? 1 : dy);
+                if (!isChaosMode) {
+                    if(this.type === 'carnivore' && !this.isZombie) {
+                         // AI săn mồi: Tìm sinh vật ăn cỏ gần nhất
+                         let closestPrey = null; let minDist = 15; // Tầm nhìn 15 ô
+                         for(let i=0; i<allCreatures.length; i++) {
+                             let prey = allCreatures[i];
+                             if(!prey.toBeDeleted && !prey.isZombie && prey.type === 'herbivore') {
+                                 let dist = Math.max(Math.abs(prey.x - this.x), Math.abs(prey.y - this.y));
+                                 if(dist < minDist) { minDist = dist; closestPrey = prey; }
+                             }
+                         }
+                         if(closestPrey) {
+                             // Đuổi theo
+                             dx = closestPrey.x > this.x ? 1 : (closestPrey.x < this.x ? -1 : 0);
+                             dy = closestPrey.y > this.y ? 1 : (closestPrey.y < this.y ? -1 : 0);
+                         }
+                    }
+                    else if (!this.isZombie && foods.size > 0 && Math.random() < 0.6) {
+                        // Tìm thức ăn cỏ
+                        let closestFood = null; let minDist = 20;
+                        for (let [key, pos] of foods) {
+                            let dist = Math.max(Math.abs(pos.x - this.x), Math.abs(pos.y - this.y));
+                            if(dist < minDist) { minDist = dist; closestFood = pos; }
+                        }
+                        if(closestFood) {
+                            dx = closestFood.x > this.x ? 1 : (closestFood.x < this.x ? -1 : 0);
+                            dy = closestFood.y > this.y ? 1 : (closestFood.y < this.y ? -1 : 0);
+                        }
+                    } else if (this.hasColony && Math.random() < flockTendency) {
+                        let distToCenter = Math.max(Math.abs(this.colonyCenterX - this.x), Math.abs(this.colonyCenterY - this.y));
+                        if (distToCenter > 2) {
+                            if (Math.random() < 0.7) dx = this.colonyCenterX > this.x ? 1 : (this.colonyCenterX < this.x ? -1 : 0);
+                            if (Math.random() < 0.7) dy = this.colonyCenterY > this.y ? 1 : (this.colonyCenterY < this.y ? -1 : 0);
+                        }
                     }
                 }
 
                 if (this.isHyper) { dx *= 2; dy *= 2; }
-                if (Math.random() < 0.4) { dx += cosmicWindX; dy += cosmicWindY; }
+                if (!this.isZombie && Math.random() < 0.4) { dx += cosmicWindX; dy += cosmicWindY; }
 
                 let nx = this.x + dx;
                 let ny = this.y + dy;
                 let nrot = this.rotation;
-                
                 if (isChaosMode || Math.random() < 0.5) nrot = Math.floor(Math.random() * 4);
 
                 let newCells = this.getCells(nx, ny, nrot);
                 let collision = false;
 
                 for (let cell of newCells) {
-                    let occupant = occupiedMap.get(`${cell.x},${cell.y}`);
+                    let key = `${cell.x},${cell.y}`;
+                    if (walls.has(key)) { collision = true; break; }
+                    let occupant = occupiedMap.get(key);
                     if (occupant && occupant !== this) { collision = true; break; }
                 }
 
@@ -508,15 +715,28 @@
                 let renderX = this.lastX + (this.x - this.lastX) * progress;
                 let renderY = this.lastY + (this.y - this.lastY) * progress;
 
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                
-                const off = 1; 
-                const size = TILE_SIZE - 2;
+                // HIỆU ỨNG ALPHA KING
+                if (this.isKing && !this.isZombie) {
+                    ctx.beginPath();
+                    ctx.arc(renderX * TILE_SIZE + TILE_SIZE/2, renderY * TILE_SIZE + TILE_SIZE/2, TILE_SIZE * 2, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(250, 204, 21, 0.2)'; 
+                    ctx.fill();
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = 'rgba(250, 204, 21, 0.8)';
+                    ctx.stroke();
+                }
 
+                ctx.fillStyle = this.color;
+                if(this.isZombie && this.health < 30 && Math.random() < 0.3) ctx.fillStyle = '#4d7c0f'; 
+                
+                ctx.beginPath();
+                const off = 1; 
+                const size = (TILE_SIZE - 2) * this.sizeScale; 
+                
                 let renderCells = this.getCells(renderX, renderY, this.rotation);
-                renderCells.forEach(cell => {
-                    ctx.rect(cell.x * TILE_SIZE + off, cell.y * TILE_SIZE + off, size, size);
+                renderCells.forEach(cell => { 
+                    let offsetAdjust = (TILE_SIZE - size) / 2;
+                    ctx.rect(cell.x * TILE_SIZE + offsetAdjust, cell.y * TILE_SIZE + offsetAdjust, size, size); 
                 });
                 ctx.fill(); 
             }
@@ -543,7 +763,33 @@
             }
         }
 
+        class MeteorBlast {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.radius = 0;
+                this.maxRadius = 30; 
+                this.life = 1.0;
+            }
+            update() { this.radius += 2; this.life -= 0.05; }
+            draw(ctx) {
+                if (this.life <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.beginPath();
+                ctx.arc(this.x * TILE_SIZE, this.y * TILE_SIZE, this.radius * TILE_SIZE, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; 
+                ctx.fill();
+                ctx.strokeStyle = '#fca5a5';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
         function updateLogic() {
+            // Nhận DNA thụ động
+            if (Math.random() < 0.1) addDNA(0.2); 
+
             if (Math.random() < 0.05) {
                 cosmicWindX = Math.floor(Math.random() * 3) - 1;
                 cosmicWindY = Math.floor(Math.random() * 3) - 1;
@@ -551,22 +797,94 @@
                 document.getElementById('windDisplay').innerText = windMap[`${cosmicWindX},${cosmicWindY}`];
             }
 
+            if (isDragging && brushMode === 3 && currentTouchWorldPos) {
+                let killRadius = 5; let pullRadius = 30;
+                creatures.forEach(c => {
+                    let dx = currentTouchWorldPos.x - c.x;
+                    let dy = currentTouchWorldPos.y - c.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < pullRadius) {
+                        c.x += Math.sign(dx) * Math.min(2, Math.abs(dx));
+                        c.y += Math.sign(dy) * Math.min(2, Math.abs(dy));
+                    }
+                    if (dist < killRadius) {
+                        c.toBeDeleted = true;
+                        for (let p = 0; p < 3; p++) particles.push(new Particle(c.x, c.y, '#a855f7')); 
+                    }
+                });
+            }
+
             let occupiedMap = new Map();
-            creatures.forEach(c => {
-                c.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, c));
+            creatures.forEach(c => { 
+                if(!c.toBeDeleted) c.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, c)); 
             });
 
-            let toRemove = new Set();
             let newBorns = [];
             activeColonyCount = 0;
+            zombieCount = 0;
+            carnivoreCount = 0;
+            
+            let oldestNormalAge = -1;
+            let currentKing = null;
 
-            creatures.forEach(c => { if (!toRemove.has(c)) c.move(occupiedMap); });
+            creatures.forEach(c => { 
+                if (!c.toBeDeleted) {
+                    c.move(occupiedMap, creatures); // Truyền mảng sinh vật vào để AI Carnivore hoạt động
+                    
+                    c.isKing = false;
+                    if (!c.isZombie && c.type==='herbivore' && c.age > oldestNormalAge) {
+                        oldestNormalAge = c.age;
+                        currentKing = c;
+                    }
+
+                    if(c.isZombie) { zombieCount++; }
+                    if(c.type === 'carnivore' && !c.isZombie) { carnivoreCount++; }
+                    
+                    // Cơ chế ăn cỏ cho Herbivore
+                    if(!c.isZombie && c.type === 'herbivore' && !c.toBeDeleted) {
+                        let onFood = false;
+                        for (let cell of c.getOccupiedCells()) {
+                            let key = `${cell.x},${cell.y}`;
+                            if (foods.has(key)) { foods.delete(key); onFood = true; }
+                        }
+                        if(onFood) {
+                            c.health += 200; // Ăn cỏ hồi máu
+                            if(c.cooldown <= 0) {
+                                let nx = c.x + Math.floor(Math.random() * 5) - 2;
+                                let ny = c.y + Math.floor(Math.random() * 5) - 2;
+                                
+                                // ĐỘT BIẾN KHI SINH SẢN
+                                let newType = 'herbivore';
+                                let newSize = c.sizeScale;
+                                
+                                if (Math.random() < 0.1) { // 10% đột biến kích thước
+                                    newSize = Math.max(0.5, Math.min(1.8, c.sizeScale + (Math.random() * 0.4 - 0.2)));
+                                }
+                                
+                                // 3% Cơ hội tiến hóa thành Kẻ ăn thịt (Carnivore)
+                                if (Math.random() < 0.03) {
+                                    newType = 'carnivore';
+                                    addDNA(10); // Thưởng lớn khi phát sinh giống mới
+                                }
+                                
+                                let newBorn = new Creature(nx, ny, mutateColor(c.color), false, newSize, c.generation + 1, newType);
+                                newBorn.cooldown = 20; c.cooldown = 10;
+                                newBorns.push(newBorn);
+                                addDNA(1); // Thưởng DNA khi đẻ con
+                                for (let p = 0; p < 3; p++) particles.push(new Particle(c.x, c.y, '#4ade80')); 
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (currentKing) currentKing.isKing = true;
 
             let spatialGrid = new Map();
             let hashSize = colonyDistance; 
             
             creatures.forEach((c, index) => {
-                if (toRemove.has(c)) return;
+                if (c.toBeDeleted) return;
                 let gx = Math.floor(c.x / hashSize);
                 let gy = Math.floor(c.y / hashSize);
                 let key = `${gx},${gy}`;
@@ -577,7 +895,7 @@
             let visited = new Set();
 
             for (let i = 0; i < creatures.length; i++) {
-                if (visited.has(i) || toRemove.has(creatures[i])) continue;
+                if (visited.has(i) || creatures[i].toBeDeleted) continue;
 
                 let component = [];
                 let queue = [i];
@@ -611,13 +929,17 @@
                 }
 
                 let sumX = 0, sumY = 0;
-                component.forEach(idx => { sumX += creatures[idx].x; sumY += creatures[idx].y; });
+                let normalCount = 0;
+                component.forEach(idx => { 
+                    sumX += creatures[idx].x; sumY += creatures[idx].y; 
+                    if(!creatures[idx].isZombie && creatures[idx].type==='herbivore') normalCount++;
+                });
                 
                 let centerX = (sumX / component.length) + (Math.random() * 10 - 5);
                 let centerY = (sumY / component.length) + (Math.random() * 10 - 5);
                 let hasColony = component.length > 1;
 
-                if (hasColony) activeColonyCount++;
+                if (hasColony && normalCount > 1) activeColonyCount++; 
 
                 component.forEach(idx => {
                     creatures[idx].colonyCenterX = centerX;
@@ -626,77 +948,133 @@
                     creatures[idx].colonyId = currentColonyId;
                 });
 
-                if (component.length > colonyDeathLimit) {
-                    let excess = component.length - colonyDeathLimit;
-                    let shuffled = [...component].sort(() => 0.5 - Math.random());
+                // Chỉ giới hạn số lượng Herbivore
+                let normalCreatures = component.filter(idx => !creatures[idx].isZombie && creatures[idx].type==='herbivore');
+                if (normalCreatures.length > colonyDeathLimit) {
+                    let excess = normalCreatures.length - colonyDeathLimit;
+                    let shuffled = [...normalCreatures].sort(() => 0.5 - Math.random());
                     let deathRow = shuffled.slice(0, excess);
-
                     deathRow.forEach(idx => {
                         let c = creatures[idx];
-                        toRemove.add(c);
+                        c.toBeDeleted = true;
                         c.getOccupiedCells().forEach(cell => occupiedMap.delete(`${cell.x},${cell.y}`));
                         for (let p = 0; p < 8; p++) particles.push(new Particle(c.x, c.y, c.color));
                     });
                 }
 
+                // TƯƠNG TÁC GẦN: Cắn, Lây Nhiễm, Ăn Thịt
                 for (let a = 0; a < component.length; a++) {
                     for (let b = a + 1; b < component.length; b++) {
                         let c1 = creatures[component[a]]; let c2 = creatures[component[b]];
-                        if (toRemove.has(c1) || toRemove.has(c2) || c1.cooldown > 0 || c2.cooldown > 0) continue; 
+                        if (c1.toBeDeleted || c2.toBeDeleted) continue; 
 
                         let dx = Math.abs(c1.x - c2.x);
                         let dy = Math.abs(c1.y - c2.y);
                         
                         if (dx <= 2 && dy <= 2) {
-                            let nx, ny;
-                            if (Math.random() < 0.05) {
-                                nx = c1.x + Math.floor(Math.random() * 61) - 30; 
-                                ny = c1.y + Math.floor(Math.random() * 61) - 30;
-                            } else {
-                                nx = c1.x + Math.floor(Math.random() * 5) - 2;
-                                ny = c1.y + Math.floor(Math.random() * 5) - 2;
-                            }
+                            // 1. Zombie Lây nhiễm
+                            if(c1.isZombie && !c2.isZombie) { c2.infect(); } 
+                            else if (!c1.isZombie && c2.isZombie) { c1.infect(); }
                             
-                            let newBorn = new Creature(nx, ny, mutateColor(c1.color));
-                            let overlap = false;
-                            for (let cell of newBorn.getOccupiedCells()) {
-                                if (occupiedMap.has(`${cell.x},${cell.y}`)) { overlap = true; break; }
+                            // 2. Kẻ săn mồi (Carnivore) ăn thịt (Herbivore)
+                            else if (c1.type === 'carnivore' && c2.type === 'herbivore') {
+                                c2.toBeDeleted = true; // Bị ăn thịt
+                                c1.health += 500; // Hồi máu
+                                for (let p = 0; p < 5; p++) particles.push(new Particle(c2.x, c2.y, '#ef4444')); 
+                                
+                                // Có khả năng đẻ con sau khi ăn no
+                                if(c1.cooldown <= 0 && Math.random() < 0.5) {
+                                    let newBorn = new Creature(c1.x+1, c1.y+1, null, false, c1.sizeScale, c1.generation+1, 'carnivore');
+                                    newBorn.cooldown = 40; c1.cooldown = 20;
+                                    newBorns.push(newBorn);
+                                }
+                            }
+                            else if (c2.type === 'carnivore' && c1.type === 'herbivore') {
+                                c1.toBeDeleted = true; 
+                                c2.health += 500;
+                                for (let p = 0; p < 5; p++) particles.push(new Particle(c1.x, c1.y, '#ef4444')); 
+                                
+                                if(c2.cooldown <= 0 && Math.random() < 0.5) {
+                                    let newBorn = new Creature(c2.x+1, c2.y+1, null, false, c2.sizeScale, c2.generation+1, 'carnivore');
+                                    newBorn.cooldown = 40; c2.cooldown = 20;
+                                    newBorns.push(newBorn);
+                                }
                             }
 
-                            if (!overlap) {
-                                newBorn.cooldown = Math.floor(Math.random() * 20) + 10; 
-                                newBorns.push(newBorn);
-                                newBorn.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, newBorn));
-                                c1.cooldown = Math.floor(Math.random() * 15) + 5;
-                                c2.cooldown = Math.floor(Math.random() * 15) + 5;
+                            // 3. Herbivore + Herbivore rảnh rỗi -> Tự sinh sản (tỷ lệ thấp hơn cỏ)
+                            else if (c1.type === 'herbivore' && c2.type === 'herbivore' && c1.cooldown <= 0 && c2.cooldown <= 0) {
+                                // Tỉ lệ đẻ tự nhiên thấp hơn bản cũ để khuyến khích dùng thức ăn
+                                if(Math.random() < 0.2) {
+                                    let nx = c1.x + Math.floor(Math.random() * 5) - 2;
+                                    let ny = c1.y + Math.floor(Math.random() * 5) - 2;
+                                    let newBorn = new Creature(nx, ny, mutateColor(c1.color), false, c1.sizeScale, c1.generation+1);
+                                    let overlap = false;
+                                    for (let cell of newBorn.getOccupiedCells()) {
+                                        if (occupiedMap.has(`${cell.x},${cell.y}`) || walls.has(`${cell.x},${cell.y}`)) { overlap = true; break; }
+                                    }
+                                    if (!overlap) {
+                                        newBorn.cooldown = 30; c1.cooldown = 15; c2.cooldown = 15;
+                                        newBorns.push(newBorn);
+                                        newBorn.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, newBorn));
+                                        addDNA(1);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            creatures = creatures.filter(c => !toRemove.has(c));
+            creatures = creatures.filter(c => !c.toBeDeleted);
             creatures.push(...newBorns);
             
-            if (autoSpawnEnabled && Math.random() < 0.8) {
+            meteors.forEach(m => {
+                m.update();
+                if(m.radius < m.maxRadius && m.life > 0.5) { 
+                    creatures.forEach(c => {
+                        let dx = c.x - m.x; let dy = c.y - m.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < m.radius) {
+                            if(dist < m.radius * 0.5) { 
+                                c.toBeDeleted = true;
+                                for (let p = 0; p < 3; p++) particles.push(new Particle(c.x, c.y, '#ef4444')); 
+                            } else { 
+                                c.x += Math.sign(dx) * Math.floor(Math.random()*5 + 2);
+                                c.y += Math.sign(dy) * Math.floor(Math.random()*5 + 2);
+                            }
+                        }
+                    });
+                    
+                    for(let r=0; r<m.radius; r++) {
+                        for(let theta=0; theta<Math.PI*2; theta+=0.5) {
+                            let cx = Math.floor(m.x + Math.cos(theta)*r);
+                            let cy = Math.floor(m.y + Math.sin(theta)*r);
+                            walls.delete(`${cx},${cy}`);
+                            foods.delete(`${cx},${cy}`);
+                        }
+                    }
+                }
+            });
+            meteors = meteors.filter(m => m.life > 0);
+            creatures = creatures.filter(c => !c.toBeDeleted);
+
+            // Bỏ tự động sinh Random bản cũ (Để người chơi tự quyết định Hệ sinh thái)
+            // if (autoSpawnEnabled && Math.random() < 0.8) { ... }
+            
+            // Hệ thống gieo hạt cỏ tự nhiên ngẫu nhiên
+            if(autoSpawnEnabled && Math.random() < 0.2) {
                 let camWorldX = Math.floor(cameraX / TILE_SIZE);
                 let camWorldY = Math.floor(cameraY / TILE_SIZE);
-                let viewWidth = Math.floor((canvas.width / zoom) / TILE_SIZE);
-                let viewHeight = Math.floor((canvas.height / zoom) / TILE_SIZE);
-                
-                let rx = camWorldX + Math.floor((Math.random() - 0.5) * (viewWidth * 5));
-                let ry = camWorldY + Math.floor((Math.random() - 0.5) * (viewHeight * 5));
-                
-                let newSpawn = new Creature(rx, ry);
-                let overlap = false;
-                for (let cell of newSpawn.getOccupiedCells()) {
-                    if (occupiedMap.has(`${cell.x},${cell.y}`)) { overlap = true; break; }
-                }
-                if (!overlap) creatures.push(newSpawn);
+                let rx = camWorldX + Math.floor((Math.random() - 0.5) * 100);
+                let ry = camWorldY + Math.floor((Math.random() - 0.5) * 100);
+                if(!walls.has(`${rx},${ry}`)) foods.set(`${rx},${ry}`, {x: rx, y: ry});
             }
             
             if(gameState === 'playing') {
-                document.getElementById('popCount').innerText = creatures.length;
+                let herbCount = creatures.length - zombieCount - carnivoreCount;
+                document.getElementById('popCount').innerText = herbCount > 0 ? herbCount : 0;
+                document.getElementById('zombieCount').innerText = zombieCount;
+                document.getElementById('carnivoreCountDisplay').innerText = carnivoreCount;
                 document.getElementById('colonyCount').innerText = activeColonyCount;
             }
         }
@@ -704,7 +1082,6 @@
         function animate(time) {
             requestAnimationFrame(animate);
 
-            // Chỉ chạy logic khi đang chơi (không ở menu) và không bị pause
             if (isPlaying && gameState === 'playing') {
                 if (time - lastLogicTime > LOGIC_TICK_RATE) {
                     updateLogic();
@@ -725,6 +1102,26 @@
             ctx.translate(canvas.width / 2, canvas.height / 2);
             ctx.scale(zoom, zoom);
             ctx.translate(-cameraX, -cameraY);
+
+            ctx.fillStyle = '#475569'; 
+            walls.forEach(w => { ctx.fillRect(w.x * TILE_SIZE, w.y * TILE_SIZE, TILE_SIZE, TILE_SIZE); });
+
+            ctx.fillStyle = '#10b981'; 
+            foods.forEach(f => {
+                ctx.beginPath();
+                ctx.arc(f.x * TILE_SIZE + TILE_SIZE/2, f.y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2.5, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            if (isDragging && brushMode === 3 && currentTouchWorldPos) {
+                ctx.beginPath();
+                ctx.arc(currentTouchWorldPos.x * TILE_SIZE, currentTouchWorldPos.y * TILE_SIZE, 50, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)'; 
+                ctx.stroke();
+            }
 
             if (!isTrailMode) {
                 let gridStep = TILE_SIZE;
@@ -753,21 +1150,22 @@
             creatures.forEach(c => c.draw(ctx, progress));
 
             particles.forEach(p => { p.update(); p.draw(ctx); });
+            meteors.forEach(m => m.draw(ctx));
             ctx.restore(); 
 
             particles = particles.filter(p => p.life > 0);
         }
 
-        // --- ĐIỀU KHIỂN & SỰ KIỆN TƯƠNG TÁC (TỐI ƯU MOBILE) ---
         function screenToWorld(sx, sy) {
             let wx = (sx - canvas.width / 2) / zoom + cameraX;
             let wy = (sy - canvas.height / 2) / zoom + cameraY;
             return { x: Math.floor(wx / TILE_SIZE), y: Math.floor(wy / TILE_SIZE) };
         }
 
-        function spawnAtMouse(x, y) {
+        function spawnAtMouse(x, y, isClickDown = false) {
             if(gameState !== 'playing') return;
             let worldPos = screenToWorld(x, y);
+            currentTouchWorldPos = worldPos; 
             
             if (brushMode === 0) {
                 creatures.push(new Creature(worldPos.x, worldPos.y));
@@ -785,10 +1183,28 @@
                     let ry = worldPos.y + Math.floor(Math.sin(angle) * radius);
                     creatures.push(new Creature(rx, ry));
                 }
+            } else if (brushMode === 4) {
+                for(let ox=-1; ox<=1; ox++) {
+                    for(let oy=-1; oy<=1; oy++) {
+                        let key = `${worldPos.x + ox},${worldPos.y + oy}`;
+                        if (!walls.has(key)) walls.set(key, {x: worldPos.x + ox, y: worldPos.y + oy});
+                    }
+                }
+            } else if (brushMode === 5) {
+                for (let i = 0; i < 5; i++) {
+                    let rx = worldPos.x + Math.floor((Math.random() - 0.5) * 6);
+                    let ry = worldPos.y + Math.floor((Math.random() - 0.5) * 6);
+                    let key = `${rx},${ry}`;
+                    if(!walls.has(key)) foods.set(key, {x: rx, y: ry});
+                }
+            } else if (brushMode === 6) {
+                creatures.push(new Creature(worldPos.x, worldPos.y, null, true));
+            } else if (brushMode === 7 && isClickDown) {
+                meteors.push(new MeteorBlast(worldPos.x, worldPos.y));
+                for(let i=0; i<20; i++) particles.push(new Particle(worldPos.x, worldPos.y, '#fca5a5'));
             }
         }
 
-        // Xử lý chạm/kéo trên di động (Hỗ trợ đa điểm để zoom/pan)
         let initialPinchDistance = null;
         let initialZoom = 1;
 
@@ -798,65 +1214,59 @@
                 isDragging = true;
                 lastPanX = e.touches[0].clientX;
                 lastPanY = e.touches[0].clientY;
-                spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY);
+                spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY, true);
             } else if (e.touches.length === 2) {
-                isDragging = false;
-                isPanning = false;
-                initialPinchDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
+                isDragging = false; isPanning = false;
+                initialPinchDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 initialZoom = zoom;
             }
         }, {passive: false});
 
         canvas.addEventListener('touchmove', (e) => {
             if(gameState !== 'playing') return;
-            e.preventDefault(); // Chống cuộn
+            e.preventDefault(); 
             if (e.touches.length === 1 && isDragging) {
-                // Di chuyển ngón tay -> Pan camera
-                let dx = e.touches[0].clientX - lastPanX;
-                let dy = e.touches[0].clientY - lastPanY;
-                cameraX -= dx / zoom;
-                cameraY -= dy / zoom;
-                lastPanX = e.touches[0].clientX;
-                lastPanY = e.touches[0].clientY;
-                
-                // Đồng thời rải sinh vật nếu di chuyển chậm
-                let spawnChance = brushMode === 0 ? 0.2 : 0.05; 
-                if (Math.random() < spawnChance) spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY);
+                if(brushMode !== 3 && brushMode !== 4 && brushMode !== 7) {
+                    let dx = e.touches[0].clientX - lastPanX;
+                    let dy = e.touches[0].clientY - lastPanY;
+                    cameraX -= dx / zoom; cameraY -= dy / zoom;
+                    lastPanX = e.touches[0].clientX; lastPanY = e.touches[0].clientY;
+                }
+                if (brushMode !== 7) {
+                    let spawnChance = (brushMode === 0 || brushMode === 6) ? 0.2 : (brushMode === 4 || brushMode === 5 ? 0.5 : 0.05); 
+                    if (brushMode === 3 || brushMode === 4 || brushMode === 5 || Math.random() < spawnChance) {
+                        spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY, false);
+                    }
+                }
             } else if (e.touches.length === 2) {
-                // Pinch to Zoom
-                let currentDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
+                let currentDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 zoom = initialZoom * (currentDistance / initialPinchDistance);
                 zoom = Math.max(0.05, Math.min(zoom, 5));
             }
         }, {passive: false});
 
-        canvas.addEventListener('touchend', () => { isDragging = false; initialPinchDistance = null; });
+        canvas.addEventListener('touchend', () => { isDragging = false; initialPinchDistance = null; currentTouchWorldPos = null; });
 
-        // Tương thích cho Chuột (PC)
         canvas.addEventListener('pointerdown', (e) => {
             if(gameState !== 'playing' || e.pointerType === 'touch') return;
             if (e.button === 2 || e.button === 1) { 
                 isPanning = true; lastPanX = e.clientX; lastPanY = e.clientY;
             } else {
-                isDragging = true; spawnAtMouse(e.clientX, e.clientY);
+                isDragging = true; spawnAtMouse(e.clientX, e.clientY, true);
             }
         });
-        canvas.addEventListener('pointerup', (e) => { if(e.pointerType === 'touch') return; isPanning = false; isDragging = false; });
+        canvas.addEventListener('pointerup', (e) => { if(e.pointerType === 'touch') return; isPanning = false; isDragging = false; currentTouchWorldPos = null; });
         canvas.addEventListener('pointermove', (e) => {
             if(gameState !== 'playing' || e.pointerType === 'touch') return;
             if (isPanning) {
                 cameraX -= (e.clientX - lastPanX) / zoom;
                 cameraY -= (e.clientY - lastPanY) / zoom;
                 lastPanX = e.clientX; lastPanY = e.clientY;
-            } else if (isDragging) {
-                let spawnChance = brushMode === 0 ? 0.2 : 0.05; 
-                if (Math.random() < spawnChance) spawnAtMouse(e.clientX, e.clientY);
+            } else if (isDragging && brushMode !== 7) {
+                let spawnChance = (brushMode === 0 || brushMode === 6) ? 0.2 : (brushMode === 4 || brushMode === 5 ? 0.5 : 0.05); 
+                if (brushMode === 3 || brushMode === 4 || brushMode === 5 || Math.random() < spawnChance) {
+                    spawnAtMouse(e.clientX, e.clientY, false);
+                }
             }
         });
         canvas.addEventListener('wheel', (e) => {
@@ -874,14 +1284,13 @@
         }, { passive: true });
         canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-        // --- CÁC HÀM NÚT BẤM (HUD) ---
         function togglePause() {
             isPlaying = !isPlaying;
             const btn = document.getElementById('btnToggle');
-            btn.innerHTML = isPlaying ? '<span class="text-sm">⏸</span>' : '<span class="text-sm">▶️</span>';
+            btn.innerHTML = isPlaying ? '<span class="text-xs">⏸</span>' : '<span class="text-xs ml-0.5">▶️</span>';
             btn.className = isPlaying 
-                ? 'w-10 h-10 rounded-full bg-teal-600/80 flex items-center justify-center active:scale-90 transition border border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.5)]'
-                : 'w-10 h-10 rounded-full bg-amber-600/80 flex items-center justify-center active:scale-90 transition border border-amber-500 shadow-[0_0_10px_rgba(217,119,6,0.5)] pl-1';
+                ? 'w-8 h-8 rounded-full bg-teal-600/80 flex items-center justify-center active:scale-90 transition border border-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]'
+                : 'w-8 h-8 rounded-full bg-amber-600/80 flex items-center justify-center active:scale-90 transition border border-amber-500 shadow-[0_0_8px_rgba(217,119,6,0.5)]';
         }
 
         function spawnRandomBatch(e) {
@@ -895,9 +1304,6 @@
                 let ry = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight);
                 creatures.push(new Creature(rx, ry));
             }
-            document.getElementById('popCount').innerText = creatures.length;
-            
-            // Animation nhẹ cho nút
             if (e && e.currentTarget) {
                 const btn = e.currentTarget;
                 btn.style.transform = 'scale(0.8)';
@@ -906,12 +1312,16 @@
         }
 
         function clearWorld() {
-            creatures = []; particles = []; activeColonyCount = 0;
+            creatures = []; particles = []; walls.clear(); foods.clear(); meteors = []; 
+            activeColonyCount = 0; zombieCount = 0; carnivoreCount = 0;
+            maxGenerationReached = 1;
+            document.getElementById('maxGenDisplay').innerText = 1;
             document.getElementById('popCount').innerText = 0;
+            document.getElementById('zombieCount').innerText = 0;
+            document.getElementById('carnivoreCountDisplay').innerText = 0;
             document.getElementById('colonyCount').innerText = 0;
         }
 
-        // --- RÀNG BUỘC SỰ KIỆN SETTING ---
         document.getElementById('speedSlider').addEventListener('input', (e) => { LOGIC_TICK_RATE = 510 - (parseInt(e.target.value) * 5); });
         document.getElementById('limitSlider').addEventListener('input', (e) => {
             colonyDeathLimit = parseInt(e.target.value);
@@ -921,23 +1331,13 @@
             colonyDistance = parseInt(e.target.value);
             document.getElementById('distanceDisplay').innerText = colonyDistance;
         });
-        document.getElementById('flockSlider').addEventListener('input', (e) => {
-            let val = parseInt(e.target.value);
-            flockTendency = val / 100;
-            document.getElementById('flockDisplay').innerText = val;
-        });
         document.getElementById('autoSpawnCheck').addEventListener('change', (e) => autoSpawnEnabled = e.target.checked);
-        document.getElementById('chaosCheck').addEventListener('change', (e) => {
-            isChaosMode = e.target.checked;
-            document.getElementById('flockSlider').parentElement.style.opacity = isChaosMode ? '0.4' : '1';
-        });
-        document.getElementById('trailCheck').addEventListener('change', (e) => isTrailMode = e.target.checked);
         
         document.getElementById('btnEra').addEventListener('click', () => {
             let speed = Math.floor(Math.random() * 100) + 1;
             document.getElementById('speedSlider').value = speed; LOGIC_TICK_RATE = 510 - (speed * 5);
 
-            let limit = Math.floor(Math.random() * 195) + 5;
+            let limit = Math.floor(Math.random() * 295) + 5;
             document.getElementById('limitSlider').value = limit; colonyDeathLimit = limit;
             document.getElementById('limitDisplay').innerText = limit;
 
@@ -945,19 +1345,13 @@
             document.getElementById('distanceSlider').value = dist; colonyDistance = dist;
             document.getElementById('distanceDisplay').innerText = dist;
 
-            let flock = Math.floor(Math.random() * 100);
-            document.getElementById('flockSlider').value = flock; flockTendency = flock / 100;
-            document.getElementById('flockDisplay').innerText = flock;
-
             isChaosMode = Math.random() > 0.8;
-            document.getElementById('chaosCheck').checked = isChaosMode;
-            document.getElementById('flockSlider').parentElement.style.opacity = isChaosMode ? '0.4' : '1';
+            closeAllPanels();
         });
 
-        // --- KHỞI TẠO BẮT ĐẦU ---
         function initInitial() {
             let occupiedInitial = new Set();
-            for (let i = 0; i < 500; i++) {
+            for (let i = 0; i < 300; i++) {
                 let clusterX = Math.floor((Math.random() - 0.5) * 400); 
                 let clusterY = Math.floor((Math.random() - 0.5) * 400);
                 let rx = clusterX + Math.floor((Math.random() - 0.5) * 20);
@@ -968,11 +1362,16 @@
                     occupiedInitial.add(key);
                 }
             }
+            // Khởi tạo một số cỏ
+             for (let i = 0; i < 100; i++) {
+                let rx = Math.floor((Math.random() - 0.5) * 400);
+                let ry = Math.floor((Math.random() - 0.5) * 400);
+                foods.set(`${rx},${ry}`, {x: rx, y: ry});
+             }
         }
 
-        // Tự động chạy nền ngay cả khi ở Menu (nhưng canvas bị mờ)
         initInitial();
-        isPlaying = true; // Cho phép chạy background mờ
+        isPlaying = true;
         requestAnimationFrame(animate);
 
     </script>
