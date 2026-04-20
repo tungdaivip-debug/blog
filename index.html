@@ -620,7 +620,13 @@
                 let type = Math.random();
                 let pts = [];
                 if (type < 0.4) {
-                    pts = [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}]; // Glider
+                    let gliderVariations = [
+                        [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   // Xuống-Phải (4h)
+                        [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  // Xuống-Trái (8h)
+                        [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], // Lên-Phải (2h)
+                        [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] // Lên-Trái (10h)
+                    ];
+                    pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)]; // Glider bay hướng ngẫu nhiên
                 } else if (type < 0.7) {
                     pts = [{x:-1,y:0}, {x:0,y:0}, {x:1,y:0}]; // Blinker
                 } else {
@@ -785,8 +791,14 @@
                     creatures.push(new Creature(rx, ry));
                 }
             } else if (brushMode === 3) {
-                // Tàu lượn (Glider)
-                let pts = [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}];
+                // Tàu lượn (Glider) ngẫu nhiên 4 hướng
+                let gliderVariations = [
+                    [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   // 4h
+                    [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  // 8h
+                    [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], // 2h
+                    [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] // 10h
+                ];
+                let pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)];
                 pts.forEach(p => creatures.push(new Creature(worldPos.x + p.x, worldPos.y + p.y)));
             } else if (brushMode === 4) {
                 // Đèn nháy (Blinker)
@@ -982,10 +994,16 @@
             
             // Thêm một số tàu lượn mặc định để đảm bảo thế giới có chuyển động
             let gliders = [
-                {x: -10, y: -10}, {x: 20, y: 15}, {x: -30, y: 20}
+                {x: -10, y: -10}, {x: 20, y: 15}, {x: -30, y: 20}, {x: 30, y: -20}
             ];
-            gliders.forEach(g => {
-                let pts = [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}];
+            let gliderVariations = [
+                [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],
+                [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],
+                [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}],
+                [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}]
+            ];
+            gliders.forEach((g, index) => {
+                let pts = gliderVariations[index % gliderVariations.length]; // Mỗi tàu lượn bay 1 hướng lúc bắt đầu
                 pts.forEach(p => {
                     let key = `${g.x + p.x},${g.y + p.y}`;
                     if (!occupiedInitial.has(key)) {
