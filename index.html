@@ -480,6 +480,7 @@
         let creatures = [];
         let particles = [];
         let activeColonyCount = 0;
+        let tickCounter = 0; // Bộ đếm nhịp để giảm tải tính toán
         
         let cameraX = 0; 
         let cameraY = 0;
@@ -522,20 +523,17 @@
                 this.stepDelay = Math.floor(Math.random() * 3) + 1; 
                 this.stepTimer = 0;
                 this.isHyper = Math.random() < 0.15; 
-                // CHÚ Ý: Giữ nguyên hình khối, không thay đổi phần này theo đúng chỉ định
                 this.shapeType = Math.random() < 0.5 ? 'L' : 'J'; 
             }
 
             getCells(cx, cy, rot) {
                 let cells = [{x: cx, y: cy}]; 
                 if (this.shapeType === 'L') {
-                    // Hình chữ L (3 ô)
                     if (rot === 0) cells.push({x: cx, y: cy - 1}, {x: cx + 1, y: cy});
                     else if (rot === 1) cells.push({x: cx + 1, y: cy}, {x: cx, y: cy + 1});
                     else if (rot === 2) cells.push({x: cx, y: cy + 1}, {x: cx - 1, y: cy});
                     else if (rot === 3) cells.push({x: cx - 1, y: cy}, {x: cx, y: cy - 1});
                 } else { 
-                    // Hình chữ L ngược (3 ô)
                     if (rot === 0) cells.push({x: cx, y: cy - 1}, {x: cx - 1, y: cy});
                     else if (rot === 1) cells.push({x: cx + 1, y: cy}, {x: cx, y: cy - 1});
                     else if (rot === 2) cells.push({x: cx, y: cy + 1}, {x: cx + 1, y: cy});
@@ -546,7 +544,6 @@
 
             getOccupiedCells() { return this.getCells(this.x, this.y, this.rotation); }
 
-            // Giữ hàm move cũ, nhưng giờ chỉ sử dụng nếu bật "isChaosMode"
             move(occupiedMap) {
                 if (this.cooldown > 0) this.cooldown--;
                 this.stepTimer++;
@@ -589,7 +586,10 @@
                 }
             }
 
-            draw(ctx, progress) {
+            // TỐI ƯU CULLING: Không vẽ nếu cá thể nằm ngoài khung hình camera
+            draw(ctx, progress, bounds) {
+                if (this.x < bounds.left || this.x > bounds.right || this.y < bounds.top || this.y > bounds.bottom) return;
+
                 let renderX = this.lastX + (this.x - this.lastX) * progress;
                 let renderY = this.lastY + (this.y - this.lastY) * progress;
 
@@ -611,24 +611,32 @@
             constructor(x, y, color) {
                 this.x = x * TILE_SIZE + TILE_SIZE / 2;
                 this.y = y * TILE_SIZE + TILE_SIZE / 2;
-                this.vx = (Math.random() - 0.5) * 2; // Giảm mạnh tốc độ văng
-                this.vy = (Math.random() - 0.5) * 2; // Giảm mạnh tốc độ văng
+                this.vx = (Math.random() - 0.5) * 2; 
+                this.vy = (Math.random() - 0.5) * 2; 
                 this.life = 1.0;
                 this.color = color;
             }
-            update() { this.x += this.vx; this.y += this.vy; this.life -= 0.08; } // Tăng tốc độ mờ dần để tan biến nhanh hơn
-            draw(ctx) {
+            update() { this.x += this.vx; this.y += this.vy; this.life -= 0.08; } 
+            
+            // TỐI ƯU VẼ: Dùng fillRect vẽ hình vuông thay vì arc (vẽ đường tròn rất nặng CPU)
+            draw(ctx, bounds) {
                 if (this.life <= 0) return;
+                
+                let gridX = Math.floor(this.x / TILE_SIZE);
+                let gridY = Math.floor(this.y / TILE_SIZE);
+                if (gridX < bounds.left || gridX > bounds.right || gridY < bounds.top || gridY > bounds.bottom) return;
+
                 ctx.globalAlpha = this.life;
                 ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, TILE_SIZE / 3, 0, Math.PI * 2);
-                ctx.fill();
+                const size = TILE_SIZE * 0.6;
+                ctx.fillRect(this.x - size/2, this.y - size/2, size, size);
                 ctx.globalAlpha = 1.0;
             }
         }
 
         function updateLogic() {
+            tickCounter++;
+
             // Cập nhật hiệu ứng gió UI
             if (Math.random() < 0.05) {
                 cosmicWindX = Math.floor(Math.random() * 3) - 1;
@@ -637,14 +645,14 @@
                 document.getElementById('windDisplay').innerText = windMap[`${cosmicWindX},${cosmicWindY}`];
             }
 
-            // 1. ÁP DỤNG LUẬT GAME OF LIFE LÊN CÁC GRID X,Y CHÍNH TÂM
+            // TỐI ƯU CHUỖI: Dùng Object để lưu tọa độ lân cận thay vì phải .split(',') chuỗi String
             let currentPos = new Map();
             creatures.forEach(c => {
                 let key = `${c.x},${c.y}`;
                 if (!currentPos.has(key)) currentPos.set(key, c);
             });
 
-            let neighborCounts = new Map();
+            let neighborCounts = new Map(); // value là object {count, x, y}
             currentPos.forEach((c, key) => {
                 for (let dx = -1; dx <= 1; dx++) {
                     for (let dy = -1; dy <= 1; dy++) {
@@ -652,7 +660,12 @@
                         let nx = c.x + dx;
                         let ny = c.y + dy;
                         let nKey = `${nx},${ny}`;
-                        neighborCounts.set(nKey, (neighborCounts.get(nKey) || 0) + 1);
+                        let nData = neighborCounts.get(nKey);
+                        if (!nData) {
+                            neighborCounts.set(nKey, {count: 1, x: nx, y: ny});
+                        } else {
+                            nData.count++;
+                        }
                     }
                 }
             });
@@ -661,26 +674,27 @@
             let toRemove = new Set();
             let newBorns = [];
 
-            // Áp dụng luật sống / chết: 
-            // - Sống: Có 2 hoặc 3 hàng xóm.
-            // - Chết: <2 (cô đơn) hoặc >3 (chật chội).
+            // Áp dụng luật Game Of Life
             currentPos.forEach((c, key) => {
-                let count = neighborCounts.get(key) || 0;
+                let nData = neighborCounts.get(key);
+                let count = nData ? nData.count : 0;
                 if (count === 2 || count === 3) {
                     nextCreatures.push(c); 
                 } else {
                     toRemove.add(c);
-                    // Giảm số lượng hạt từ 3 xuống 1 để không gây rối mắt
-                    particles.push(new Particle(c.x, c.y, c.color));
+                    // TỐI ƯU: Chỉ cho phép sinh thêm Particle nếu số lượng chưa quá nhiều
+                    if (particles.length < 800) {
+                        particles.push(new Particle(c.x, c.y, c.color));
+                    }
                 }
             });
 
-            // Sinh sản: Ô chết có đúng 3 hàng xóm sống -> Thành ô sống mới
-            neighborCounts.forEach((count, key) => {
-                if (count === 3 && !currentPos.has(key)) {
-                    let [nx, ny] = key.split(',').map(Number);
+            // Sinh sản
+            neighborCounts.forEach((nData, key) => {
+                if (nData.count === 3 && !currentPos.has(key)) {
+                    let nx = nData.x;
+                    let ny = nData.y;
                     
-                    // Di truyền màu ngẫu nhiên từ hàng xóm
                     let neighborColors = [];
                     for (let dx = -1; dx <= 1; dx++) {
                         for (let dy = -1; dy <= 1; dy++) {
@@ -696,23 +710,23 @@
 
             creatures = nextCreatures.concat(newBorns);
 
-            // 2. KẾT HỢP CHAOS MODE NẾU BẬT (Thỏa mãn tính kết hợp luật)
+            // Xử lý Chaos Mode
             if (isChaosMode) {
                 let occupiedMap = new Map();
                 creatures.forEach(c => {
                     c.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, c));
                 });
-                // Nếu bật, chúng vừa tuân theo Game of Life vừa vận động nhiễu loạn
                 creatures.forEach(c => c.move(occupiedMap));
             } else {
-                // Chỉ cần lưu lại lastX, lastY để draw animation mượt mà
                 creatures.forEach(c => {
                     c.lastX = c.x; c.lastY = c.y;
                 });
             }
 
-            // 3. AUTO SPAWN (Tiếp tục tạo hạt nhiễu vũ trụ để nuôi dưỡng Game of life)
-            if (autoSpawnEnabled && Math.random() < 0.1) {
+            // TỐI ƯU: Tự động ngắt auto spawn nếu số lượng đã quá tải (>6000 cá thể)
+            if (creatures.length > 6000) {
+                // Tạm thời bỏ qua auto spawn
+            } else if (autoSpawnEnabled && Math.random() < 0.1) {
                 let camWorldX = Math.floor(cameraX / TILE_SIZE);
                 let camWorldY = Math.floor(cameraY / TILE_SIZE);
                 let viewWidth = Math.floor((canvas.width / zoom) / TILE_SIZE);
@@ -725,11 +739,10 @@
                 let pts = [];
                 
                 if (type < 0.15) { 
-                    // 15% thả một khối hình có ý nghĩa lớn (Trái tim, Mặt cười,...)
                     let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
                     let h = template.length;
                     let w = Math.max(...template.map(r => r.length));
-                    let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; // Cùng một dải màu cho hình
+                    let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; 
                     
                     for (let y = 0; y < h; y++) {
                         for (let x = 0; x < template[y].length; x++) {
@@ -744,16 +757,16 @@
                     }
                 } else if (type < 0.4) {
                     let gliderVariations = [
-                        [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   // Xuống-Phải (4h)
-                        [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  // Xuống-Trái (8h)
-                        [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], // Lên-Phải (2h)
-                        [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] // Lên-Trái (10h)
+                        [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   
+                        [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  
+                        [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], 
+                        [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] 
                     ];
-                    pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)]; // Glider bay hướng ngẫu nhiên
+                    pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)]; 
                 } else if (type < 0.7) {
-                    pts = [{x:-1,y:0}, {x:0,y:0}, {x:1,y:0}]; // Blinker
+                    pts = [{x:-1,y:0}, {x:0,y:0}, {x:1,y:0}]; 
                 } else {
-                    pts = [{x:0,y:0}, {x:1,y:0}, {x:0,y:1}, {x:1,y:1}]; // Block
+                    pts = [{x:0,y:0}, {x:1,y:0}, {x:0,y:1}, {x:1,y:1}]; 
                 }
                 
                 pts.forEach(p => {
@@ -765,63 +778,65 @@
                 });
             }
             
-            // 4. KIỂM SOÁT QUẦN XÃ (Giữ lại đếm Colony cho HUD)
-            let spatialGrid = new Map();
-            let hashSize = colonyDistance; 
-            creatures.forEach((c, index) => {
-                let gx = Math.floor(c.x / hashSize);
-                let gy = Math.floor(c.y / hashSize);
-                let key = `${gx},${gy}`;
-                if (!spatialGrid.has(key)) spatialGrid.set(key, []);
-                spatialGrid.get(key).push(index);
-            });
+            // TỐI ƯU THROTTLING: Chỉ tính toán BFS quần xã (rất nặng) sau mỗi 4 nhịp thay vì liên tục
+            if (tickCounter % 4 === 0) {
+                let spatialGrid = new Map();
+                let hashSize = colonyDistance; 
+                creatures.forEach((c, index) => {
+                    let gx = Math.floor(c.x / hashSize);
+                    let gy = Math.floor(c.y / hashSize);
+                    let key = `${gx},${gy}`;
+                    if (!spatialGrid.has(key)) spatialGrid.set(key, []);
+                    spatialGrid.get(key).push(index);
+                });
 
-            let visited = new Set();
-            activeColonyCount = 0;
+                let visited = new Set();
+                activeColonyCount = 0;
 
-            for (let i = 0; i < creatures.length; i++) {
-                if (visited.has(i)) continue;
-                let component = [];
-                let queue = [i];
-                visited.add(i);
-                let head = 0;
-                while (head < queue.length) {
-                    let curr = queue[head++];
-                    let currCreature = creatures[curr];
-                    component.push(curr);
+                for (let i = 0; i < creatures.length; i++) {
+                    if (visited.has(i)) continue;
+                    let component = [];
+                    let queue = [i];
+                    visited.add(i);
+                    let head = 0;
+                    while (head < queue.length) {
+                        let curr = queue[head++];
+                        let currCreature = creatures[curr];
+                        component.push(curr);
 
-                    let cgx = Math.floor(currCreature.x / hashSize);
-                    let cgy = Math.floor(currCreature.y / hashSize);
+                        let cgx = Math.floor(currCreature.x / hashSize);
+                        let cgy = Math.floor(currCreature.y / hashSize);
 
-                    for (let ox = -1; ox <= 1; ox++) {
-                        for (let oy = -1; oy <= 1; oy++) {
-                            let neighbors = spatialGrid.get(`${cgx + ox},${cgy + oy}`);
-                            if (neighbors) {
-                                for (let j of neighbors) {
-                                    if (visited.has(j)) continue;
-                                    let dx = Math.abs(currCreature.x - creatures[j].x);
-                                    let dy = Math.abs(currCreature.y - creatures[j].y);
-                                    if (dx <= colonyDistance && dy <= colonyDistance) {
-                                        visited.add(j); queue.push(j);
+                        for (let ox = -1; ox <= 1; ox++) {
+                            for (let oy = -1; oy <= 1; oy++) {
+                                let neighbors = spatialGrid.get(`${cgx + ox},${cgy + oy}`);
+                                if (neighbors) {
+                                    for (let j of neighbors) {
+                                        if (visited.has(j)) continue;
+                                        let dx = Math.abs(currCreature.x - creatures[j].x);
+                                        let dy = Math.abs(currCreature.y - creatures[j].y);
+                                        if (dx <= colonyDistance && dy <= colonyDistance) {
+                                            visited.add(j); queue.push(j);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                    
+                    let sumX = 0, sumY = 0;
+                    component.forEach(idx => { sumX += creatures[idx].x; sumY += creatures[idx].y; });
+                    let centerX = sumX / component.length;
+                    let centerY = sumY / component.length;
+
+                    component.forEach(idx => {
+                        creatures[idx].colonyCenterX = centerX;
+                        creatures[idx].colonyCenterY = centerY;
+                        creatures[idx].hasColony = component.length > 1;
+                    });
+
+                    if (component.length > 1) activeColonyCount++;
                 }
-                
-                let sumX = 0, sumY = 0;
-                component.forEach(idx => { sumX += creatures[idx].x; sumY += creatures[idx].y; });
-                let centerX = sumX / component.length;
-                let centerY = sumY / component.length;
-
-                component.forEach(idx => {
-                    creatures[idx].colonyCenterX = centerX;
-                    creatures[idx].colonyCenterY = centerY;
-                    creatures[idx].hasColony = component.length > 1;
-                });
-
-                if (component.length > 1) activeColonyCount++;
             }
 
             if(gameState === 'playing') {
@@ -854,6 +869,14 @@
             ctx.scale(zoom, zoom);
             ctx.translate(-cameraX, -cameraY);
 
+            // Tính toán khung nhìn giới hạn (Bounds) để Culling
+            let bounds = {
+                left: Math.floor((cameraX - (canvas.width / 2) / zoom) / TILE_SIZE) - 3,
+                right: Math.ceil((cameraX + (canvas.width / 2) / zoom) / TILE_SIZE) + 3,
+                top: Math.floor((cameraY - (canvas.height / 2) / zoom) / TILE_SIZE) - 3,
+                bottom: Math.ceil((cameraY + (canvas.height / 2) / zoom) / TILE_SIZE) + 3
+            };
+
             if (!isTrailMode) {
                 let gridStep = TILE_SIZE;
                 if (zoom < 0.4) gridStep = TILE_SIZE * 5; 
@@ -878,9 +901,10 @@
             }
 
             let progress = (isPlaying && gameState === 'playing') ? Math.max(0, Math.min((time - lastLogicTime) / LOGIC_TICK_RATE, 1.0)) : 1.0;
-            creatures.forEach(c => c.draw(ctx, progress));
+            // Truyền bounds vào hàm vẽ để áp dụng Culling
+            creatures.forEach(c => c.draw(ctx, progress, bounds));
 
-            particles.forEach(p => { p.update(); p.draw(ctx); });
+            particles.forEach(p => { p.update(); p.draw(ctx, bounds); });
             ctx.restore(); 
 
             particles = particles.filter(p => p.life > 0);
@@ -1033,12 +1057,11 @@
             let cx = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth * 0.5);
             let cy = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight * 0.5);
 
-            // 50% tỉ lệ triệu hồi một hình khối có ý nghĩa, 50% là nhiễu loạn
             if (Math.random() < 0.5) {
                 let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
                 let h = template.length;
                 let w = Math.max(...template.map(r => r.length));
-                let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; // Vẽ cùng dải màu
+                let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; 
                 
                 for (let y = 0; y < h; y++) {
                     for (let x = 0; x < template[y].length; x++) {
@@ -1116,12 +1139,10 @@
         function initInitial() {
             let occupiedInitial = new Set();
             
-            // Khởi tạo một số cụm mật độ cao (30-40%) để Game of Life có thể nảy nở
             for (let cluster = 0; cluster < 15; cluster++) {
                 let clusterX = Math.floor((Math.random() - 0.5) * 100); 
                 let clusterY = Math.floor((Math.random() - 0.5) * 100);
                 
-                // Mỗi cụm rải khoảng 30 ô trong không gian 10x10
                 for (let i = 0; i < 30; i++) {
                     let rx = clusterX + Math.floor((Math.random() - 0.5) * 10);
                     let ry = clusterY + Math.floor((Math.random() - 0.5) * 10);
@@ -1133,7 +1154,6 @@
                 }
             }
             
-            // Thêm một số tàu lượn mặc định để đảm bảo thế giới có chuyển động
             let gliders = [
                 {x: -10, y: -10}, {x: 20, y: 15}, {x: -30, y: 20}, {x: 30, y: -20}
             ];
@@ -1144,7 +1164,7 @@
                 [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}]
             ];
             gliders.forEach((g, index) => {
-                let pts = gliderVariations[index % gliderVariations.length]; // Mỗi tàu lượn bay 1 hướng lúc bắt đầu
+                let pts = gliderVariations[index % gliderVariations.length]; 
                 pts.forEach(p => {
                     let key = `${g.x + p.x},${g.y + p.y}`;
                     if (!occupiedInitial.has(key)) {
@@ -1160,9 +1180,8 @@
         requestAnimationFrame(animate);
 
 
-        // ================= ADDICTIVE ENGINE (SAFE) Giữ nguyên hoàn toàn không thay đổi =================
+        // ================= ADDICTIVE ENGINE (SAFE) =================
 
-        // ===== STATE =====
         let AE = {
             lastEvent: 0,
             delay: 5000 + Math.random() * 10000,
@@ -1188,7 +1207,6 @@
             predictTimer: 0
         };
 
-        // ===== TRACK INPUT =====
         canvas.addEventListener('pointermove', (e)=>{
             AE.cursor = screenToWorld(e.clientX, e.clientY);
         });
@@ -1213,7 +1231,6 @@
             }
         });
 
-        // ===== EVENT =====
         function AE_trigger() {
             let r = Math.random();
 
@@ -1255,20 +1272,17 @@
             }
         }
 
-        // ===== HOOK ANIMATE (KHÔNG PHÁ CODE CŨ) =====
         const AE_oldAnimate = animate;
         animate = function(time){
 
             AE_oldAnimate(time);
 
-            // trigger
             if (time - AE.lastEvent > AE.delay){
                 AE_trigger();
                 AE.lastEvent = time;
                 AE.delay = 5000 + Math.random()*10000;
             }
 
-            // ghost
             if (Math.random()<0.15 && creatures.length){
                 let c = creatures[Math.floor(Math.random()*creatures.length)];
                 AE.ghost.push({x:c.x,y:c.y,life:1});
@@ -1276,7 +1290,6 @@
             AE.ghost.forEach(g=>g.life-=0.04);
             AE.ghost = AE.ghost.filter(g=>g.life>0);
 
-            // delayed reward
             if (AE.pending){
                 AE.rewardTimer -=16;
                 if (AE.rewardTimer<=0){
@@ -1289,7 +1302,6 @@
                 }
             }
 
-            // prediction
             if (Math.random()<0.05 && AE.profile.zones.length>5){
                 let z = AE.profile.zones[Math.floor(Math.random()*AE.profile.zones.length)];
                 AE.predicted = z;
@@ -1308,7 +1320,6 @@
                 }
             }
 
-            // timers
             if (AE.memoryTimer>0){
                 AE.memoryTimer-=16;
                 if (AE.memoryTimer<=0) AE.memory=null;
@@ -1319,10 +1330,8 @@
                 if (AE.patternTimer<=0) AE.pattern=null;
             }
 
-            // ===== DRAW OVERLAY =====
             ctx.save();
 
-            // ripple
             if (AE.ripple){
                 AE.ripple.radius+=4;
                 ctx.beginPath();
@@ -1332,7 +1341,6 @@
                 if (AE.ripple.radius>AE.ripple.max) AE.ripple=null;
             }
 
-            // near miss
             if (AE.nearMiss){
                 ctx.strokeStyle="rgba(255,100,100,0.4)";
                 ctx.beginPath();
@@ -1341,7 +1349,6 @@
                 ctx.stroke();
             }
 
-            // ghost
             AE.ghost.forEach(g=>{
                 ctx.globalAlpha=g.life*0.3;
                 ctx.fillStyle="white";
@@ -1349,7 +1356,6 @@
                 ctx.globalAlpha=1;
             });
 
-            // pattern
             if (AE.pattern){
                 ctx.strokeStyle="rgba(255,255,255,0.15)";
                 ctx.beginPath();
@@ -1365,7 +1371,6 @@
                 ctx.stroke();
             }
 
-            // text
             if (AE.memory){
                 ctx.fillStyle="rgba(255,255,255,0.8)";
                 ctx.font="14px sans-serif";
@@ -1376,15 +1381,14 @@
             ctx.restore();
         };
 
-        // ===== DRAW HOOK =====
         const AE_oldDraw = Creature.prototype.draw;
-        Creature.prototype.draw = function(ctx,progress){
+        Creature.prototype.draw = function(ctx,progress, bounds){
 
             if (this === AE.chosen){
                 ctx.save();
                 ctx.shadowBlur=20;
                 ctx.shadowColor="white";
-                AE_oldDraw.call(this,ctx,progress);
+                AE_oldDraw.call(this,ctx,progress, bounds);
                 ctx.restore();
                 return;
             }
@@ -1393,12 +1397,12 @@
                 ctx.save();
                 ctx.shadowBlur=10;
                 ctx.shadowColor="cyan";
-                AE_oldDraw.call(this,ctx,progress);
+                AE_oldDraw.call(this,ctx,progress, bounds);
                 ctx.restore();
                 return;
             }
 
-            AE_oldDraw.call(this,ctx,progress);
+            AE_oldDraw.call(this,ctx,progress, bounds);
         };
     </script>
 </body>
