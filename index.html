@@ -285,6 +285,61 @@
         const canvas = document.getElementById('worldCanvas');
         let gameState = 'menu';
 
+        // --- CÁC HÌNH KHỐI CÓ Ý NGHĨA ---
+        const SHAPE_TEMPLATES = [
+            // Trái tim
+            [
+                "  XX   XX  ",
+                " XXXX XXXX ",
+                "XXXXXXXXXXX",
+                " XXXXXXXXX ",
+                "  XXXXXXX  ",
+                "   XXXXX   ",
+                "    XXX    ",
+                "     X     "
+            ],
+            // Mặt cười
+            [
+                " X     X ",
+                "         ",
+                "X       X",
+                " X     X ",
+                "  XXXXX  "
+            ],
+            // Ngôi sao
+            [
+                "    X    ",
+                "   XXX   ",
+                " XXXXXXX ",
+                "  XXXXX  ",
+                " X  X  X ",
+                "X       X"
+            ],
+            // Tàu vũ trụ (LWSS)
+            [
+                " X  X ",
+                "     X",
+                "X    X",
+                " XXXXX"
+            ],
+            // Pulsar (Dao động Game of Life)
+            [
+                "  XXX   XXX  ",
+                "             ",
+                "X    X X    X",
+                "X    X X    X",
+                "X    X X    X",
+                "  XXX   XXX  ",
+                "             ",
+                "  XXX   XXX  ",
+                "X    X X    X",
+                "X    X X    X",
+                "X    X X    X",
+                "             ",
+                "  XXX   XXX  "
+            ]
+        ];
+
         function startGame() {
             gameState = 'playing';
             
@@ -616,10 +671,28 @@
                 let cx = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth);
                 let cy = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight);
                 
-                // Sinh ra các nhóm có thể sống sót (Glider, Blinker, Block) thay vì 1 ô lẻ loi
                 let type = Math.random();
                 let pts = [];
-                if (type < 0.4) {
+                
+                if (type < 0.15) { 
+                    // 15% thả một khối hình có ý nghĩa lớn (Trái tim, Mặt cười,...)
+                    let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
+                    let h = template.length;
+                    let w = Math.max(...template.map(r => r.length));
+                    let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; // Cùng một dải màu cho hình
+                    
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < template[y].length; x++) {
+                            if (template[y][x] === 'X') {
+                                let rx = cx + x - Math.floor(w/2);
+                                let ry = cy + y - Math.floor(h/2);
+                                if (!currentPos.has(`${rx},${ry}`)) {
+                                    creatures.push(new Creature(rx, ry, mutateColor(colorBase)));
+                                }
+                            }
+                        }
+                    }
+                } else if (type < 0.4) {
                     let gliderVariations = [
                         [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   // Xuống-Phải (4h)
                         [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  // Xuống-Trái (8h)
@@ -907,15 +980,33 @@
             let viewWidth = Math.floor((canvas.width / zoom) / TILE_SIZE);
             let viewHeight = Math.floor((canvas.height / zoom) / TILE_SIZE);
 
-            // Rải một cụm mật độ cao ở vùng giữa màn hình thay vì rải rác
-            let clusterX = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth * 0.5);
-            let clusterY = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight * 0.5);
+            let cx = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth * 0.5);
+            let cy = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight * 0.5);
 
-            for (let i = 0; i < 40; i++) {
-                let rx = clusterX + Math.floor((Math.random() - 0.5) * 12);
-                let ry = clusterY + Math.floor((Math.random() - 0.5) * 12);
-                creatures.push(new Creature(rx, ry));
+            // 50% tỉ lệ triệu hồi một hình khối có ý nghĩa, 50% là nhiễu loạn
+            if (Math.random() < 0.5) {
+                let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
+                let h = template.length;
+                let w = Math.max(...template.map(r => r.length));
+                let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; // Vẽ cùng dải màu
+                
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < template[y].length; x++) {
+                        if (template[y][x] === 'X') {
+                            let rx = cx + x - Math.floor(w/2);
+                            let ry = cy + y - Math.floor(h/2);
+                            creatures.push(new Creature(rx, ry, mutateColor(colorBase)));
+                        }
+                    }
+                }
+            } else {
+                for (let i = 0; i < 40; i++) {
+                    let rx = cx + Math.floor((Math.random() - 0.5) * 12);
+                    let ry = cy + Math.floor((Math.random() - 0.5) * 12);
+                    creatures.push(new Creature(rx, ry));
+                }
             }
+
             document.getElementById('popCount').innerText = creatures.length;
             
             if (e && e.currentTarget) {
