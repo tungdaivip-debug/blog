@@ -3,1407 +3,826 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TeTe Universe</title>
+    <title>Cut Shape - Pro Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Tối ưu cho Mobile Game */
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background-color: #0f172a; 
-            color: white; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            overscroll-behavior: none;
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,800;0,900;1,800&display=swap');
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #020617; /* Slate 950 */
+            font-family: 'Montserrat', 'Segoe UI', sans-serif;
+            touch-action: none; user-select: none;
+            display: flex; justify-content: center; overflow: hidden;
+            color: white;
         }
+
+        /* Animated Grid Background */
+        .bg-grid {
+            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(45deg);
+            animation: gridMove 20s linear infinite;
+            z-index: 0; pointer-events: none;
+        }
+        @keyframes gridMove {
+            0% { transform: perspective(500px) rotateX(45deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(45deg) translateY(40px); }
+        }
+
+        #game-container {
+            width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column;
+            position: relative; z-index: 1;
+        }
+
+        /* Logo Effect Menu */
+        .logo-shape {
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.6);
+            transition: all 0.3s;
+        }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.05);
+            border-radius: 20px;
+        }
+
+        /* Screens */
+        .screen {
+            position: absolute; inset: 0; display: flex; flex-direction: column;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .hidden-screen { opacity: 0; pointer-events: none; transform: scale(1.05); }
+
+        /* Main Menu */
+        #main-menu { align-items: center; justify-content: center; z-index: 100; background: radial-gradient(circle, rgba(15,23,42,0.8) 0%, #020617 100%); }
+        .game-title {
+            font-size: 4rem; font-weight: 900; line-height: 1; text-align: center;
+            background: linear-gradient(to bottom, #fff, #38bdf8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(56,189,248,0.6));
+            margin-bottom: 10px;
+        }
+        .play-btn {
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            color: white; font-weight: 900; font-size: 1.5rem; letter-spacing: 2px;
+            padding: 15px 50px; border-radius: 50px; border: 2px solid #7dd3fc;
+            box-shadow: 0 0 30px rgba(56,189,248,0.5);
+            cursor: pointer; transition: all 0.2s;
+            animation: pulse 2s infinite; margin-top: 50px;
+        }
+        .play-btn:active { transform: scale(0.95); }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(56,189,248,0.5); }
+            50% { box-shadow: 0 0 40px rgba(56,189,248,0.8), 0 0 10px #fff; }
+            100% { box-shadow: 0 0 20px rgba(56,189,248,0.5); }
+        }
+
+        /* Gameplay UI */
+        #canvas-wrapper {
+            flex-grow: 1; position: relative; margin: 0 20px; border-radius: 20px;
+            border: 2px dashed rgba(56, 189, 248, 0.4);
+            background: radial-gradient(circle, rgba(30,41,59,0.5) 0%, rgba(2,6,23,0.8) 100%);
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.9); overflow: hidden;
+        }
+        canvas#gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
         
-        canvas { 
-            display: block; 
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 0;
-            touch-action: none;
+        #header-area { padding: 20px; display: flex; justify-content: space-between; align-items: start; gap: 15px; }
+        #footer-area { padding: 20px; display: flex; flex-direction: column; gap: 15px; z-index: 10; }
+
+        #target-container { padding: 12px; display: flex; flex-direction: column; align-items: center; min-width: 110px; }
+        #target-canvas {
+            width: 80px; height: 80px; background: rgba(0,0,0,0.4); border-radius: 12px; margin-top: 8px;
+            border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.15);
         }
 
-        .glass {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        #mode-selector { display: flex; gap: 10px; justify-content: center; width: 100%; }
+        .mode-btn {
+            background: rgba(30, 41, 59, 0.8); border: 2px solid #475569; color: #94a3b8;
+            padding: 12px; border-radius: 16px; font-weight: 800; font-size: 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); flex: 1;
+        }
+        .mode-btn span.icon { font-size: 22px; }
+        .mode-btn.active {
+            background: rgba(56, 189, 248, 0.15); border-color: #38bdf8; color: #e0f2fe;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.2);
+            transform: translateY(-5px);
         }
 
-        .glass-solid {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        #ink-container { width: 100%; opacity: 0; transition: opacity 0.3s; }
+        #ink-bar { height: 6px; background: #a855f7; width: 100%; border-radius: 6px; box-shadow: 0 0 10px #a855f7; transition: width 0.1s; }
 
-        .fade-enter { animation: fadeIn 0.3s ease-out forwards; }
-        .fade-exit { animation: fadeOut 0.3s ease-in forwards; pointer-events: none; }
+        .text-glow { text-shadow: 0 0 15px currentColor; }
+        #match-canvas { display: none; }
         
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes fadeOut { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.05); } }
-
-        .slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .slide-down { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes slideDown { from { transform: translateY(0); } to { transform: translateY(100%); } }
-
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            background: transparent;
-            touch-action: pan-x;
-            margin: 6px 0;
-        }
-        input[type=range]:focus { outline: none; }
-        
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 20px; width: 20px;
-            border-radius: 50%;
-            background: #2dd4bf;
-            cursor: pointer;
-            margin-top: -6px;
-            box-shadow: 0 0 8px rgba(0,0,0,0.6);
-            border: 2px solid white;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 8px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.2); 
-            border-radius: 4px;
-        }
-        input[type=range]::-moz-range-track {
-            width: 100%; height: 8px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-        }
-        input[type=range]::-moz-range-thumb {
-            height: 20px; width: 20px;
-            border-radius: 50%;
-            background: #2dd4bf;
-            cursor: pointer;
-            border: 2px solid white;
-            box-shadow: 0 0 8px rgba(0,0,0,0.6);
-        }
-        
-        .canvas-blur { filter: blur(8px) brightness(0.6); transition: filter 0.5s ease; }
-        .canvas-clear { filter: blur(0px) brightness(1); transition: filter 0.5s ease; }
+        /* Game Over */
+        #game-over { align-items: center; justify-content: center; background: rgba(2,6,23,0.95); z-index: 200; backdrop-filter: blur(10px); }
     </style>
 </head>
 <body>
 
-    <canvas id="worldCanvas" class="canvas-blur"></canvas>
+    <div class="bg-grid"></div>
 
-    <div id="mainMenu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-        <div class="text-center mb-10 fade-enter">
-            <h1 class="text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-blue-500 drop-shadow-lg mb-2">TeTe Universe</h1>
-            <p class="text-slate-300 text-sm tracking-widest uppercase">Luật Sinh Mệnh Game of Life</p>
-        </div>
-
-        <div class="flex flex-col gap-4 w-64 fade-enter" style="animation-delay: 0.1s;">
-            <button onclick="startGame()" class="relative overflow-hidden group bg-gradient-to-r from-teal-500 to-blue-600 text-white font-bold text-xl py-4 rounded-2xl shadow-[0_0_20px_rgba(20,184,166,0.4)] active:scale-95 transition-all">
-                <span class="relative z-10">BẮT ĐẦU</span>
-                <div class="absolute inset-0 h-full w-full bg-white/20 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300"></div>
-            </button>
-            
-            <button onclick="openSetup()" class="glass text-white font-semibold py-3 rounded-2xl active:scale-95 transition-transform border border-slate-600">
-                ⚙️ Thiết lập ban đầu
-            </button>
-            
-            <div class="text-center mt-8 text-xs text-slate-400">
-                <p>Kéo để di chuyển • Vuốt để Zoom</p>
-                <p>Chạm để thả sinh vật</p>
+    <div id="game-container">
+        
+        <!-- MAIN MENU -->
+        <div id="main-menu" class="screen">
+            <!-- Geometric Logo Trang trí -->
+            <div class="mb-8 relative w-28 h-28 flex items-center justify-center">
+                <div class="absolute inset-0 bg-sky-500/20 rounded-2xl transform rotate-12 animate-pulse border border-sky-400/50"></div>
+                <div class="absolute inset-0 border-4 border-sky-400 rounded-2xl transform -rotate-6 logo-shape"></div>
+                <div class="w-0 h-0 border-l-[20px] border-l-transparent border-b-[35px] border-b-white border-r-[20px] border-r-transparent transform rotate-12 drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]"></div>
             </div>
-        </div>
-    </div>
 
-    <div id="gameHUD" class="absolute inset-0 z-40 hidden pointer-events-none flex-col justify-between">
-        <div class="w-full glass rounded-b-2xl p-2 px-4 flex justify-between items-center pointer-events-auto shadow-md fade-enter">
-            <button onclick="exitToMenu()" class="w-8 h-8 rounded-full bg-slate-800/80 flex items-center justify-center active:scale-90 transition border border-slate-600">
-                <span class="text-sm">🏠</span>
-            </button>
-            
-            <div class="flex flex-col items-center flex-1">
-                <div class="flex gap-4">
-                    <div class="text-center">
-                        <div class="text-[9px] text-teal-400 uppercase font-bold tracking-wider">Sinh vật</div>
-                        <div id="popCount" class="text-lg font-black text-white leading-none">0</div>
-                    </div>
-                    <div class="w-px bg-slate-600"></div>
-                    <div class="text-center">
-                        <div class="text-[9px] text-purple-400 uppercase font-bold tracking-wider">Quần xã</div>
-                        <div id="colonyCount" class="text-lg font-black text-white leading-none">0</div>
+            <h1 class="game-title">CUT<br>SHAPE</h1>
+            <p class="text-sky-300 tracking-[0.4em] font-black text-sm mt-2 opacity-90">LOGICAL CUTS</p>
+            <button class="play-btn" onclick="startGame()">PLAY</button>
+        </div>
+
+        <!-- GAMEPLAY UI -->
+        <div id="game-ui" class="screen hidden-screen">
+            <div id="header-area">
+                <div id="target-container" class="glass-panel">
+                    <p class="text-sky-300 text-[10px] uppercase tracking-[0.2em] font-black">MỤC TIÊU</p>
+                    <h2 id="target-name" class="text-white text-xs font-bold mt-1 text-center w-[80px] leading-tight text-glow">TAM GIÁC</h2>
+                    <canvas id="target-canvas" width="80" height="80"></canvas>
+                </div>
+                <div class="text-right glass-panel px-5 py-3 flex-grow ml-2">
+                    <p class="text-slate-400 text-[10px] uppercase tracking-widest mb-1 font-bold">ĐIỂM SỐ</p>
+                    <p id="score-display" class="text-white text-3xl font-black text-glow">0</p>
+                    <div id="combo-display" class="mt-1 text-sm font-bold opacity-0 transition-opacity text-amber-400 text-glow">
+                        COMBO x<span id="combo-val">1</span>
                     </div>
                 </div>
-                <div class="text-[8px] text-gray-400 mt-0.5 bg-slate-800/50 px-2 py-0.5 rounded-full">
-                    Gió: <span id="windDisplay" class="text-cyan-300">Tĩnh lặng</span>
-                </div>
             </div>
 
-            <button id="btnToggle" onclick="togglePause()" class="w-8 h-8 rounded-full bg-teal-600/80 flex items-center justify-center active:scale-90 transition border border-teal-500 shadow-[0_0_8px_rgba(20,184,166,0.5)]">
-                <span class="text-xs">⏸</span>
-            </button>
+            <div id="canvas-wrapper">
+                <canvas id="gameCanvas"></canvas>
+            </div>
+
+            <div id="footer-area">
+                <div id="ink-container">
+                    <div class="flex justify-between items-center mb-1">
+                        <p class="text-[10px] text-purple-400 font-bold tracking-widest uppercase">Năng lượng vẽ tự do</p>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-[6px] border border-slate-700">
+                        <div id="ink-bar"></div>
+                    </div>
+                </div>
+                <div id="mode-selector">
+                    <button class="mode-btn" id="btn-mode-0" onclick="selectMode(0)"></button>
+                    <button class="mode-btn" id="btn-mode-1" onclick="selectMode(1)"></button>
+                </div>
+            </div>
         </div>
 
-        <div class="absolute bottom-6 w-full flex justify-center pointer-events-none fade-enter">
-            <div class="flex items-center gap-2 glass-solid px-3 py-2 rounded-3xl pointer-events-auto shadow-2xl border border-slate-600">
-                <button onclick="openSettings()" class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center active:scale-90 transition text-lg border border-slate-600">🎛️</button>
-                
-                <button id="btnEra" class="w-10 h-10 rounded-xl bg-fuchsia-900/50 flex items-center justify-center active:scale-90 transition text-lg border border-fuchsia-500/50">🌌</button>
-
-                <button onclick="spawnRandomBatch(event)" class="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center active:scale-90 transition border-2 border-indigo-400 text-2xl shadow-[0_0_15px_rgba(79,70,229,0.5)] mx-1 -translate-y-2">🧬</button>
-
-                <button onclick="openTools()" class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center active:scale-90 transition text-lg border border-slate-600 relative">🖌️
-                    <div id="brushIndicator" class="absolute -top-1 -right-1 w-4 h-4 bg-teal-500 rounded-full text-[9px] flex items-center justify-center font-bold border border-slate-800">1</div>
-                </button>
-                
-                <button onclick="clearWorld()" class="w-10 h-10 rounded-xl bg-rose-900/50 flex items-center justify-center active:scale-90 transition text-lg border border-rose-500/50">🗑️</button>
+        <!-- GAME OVER -->
+        <div id="game-over" class="screen hidden-screen">
+            <h2 class="text-red-500 text-5xl font-black mb-2 uppercase tracking-widest text-glow text-center">THẤT BẠI</h2>
+            <p class="text-slate-300 text-sm mb-8 font-bold">KHÔNG ĐẠT ĐỘ CHÍNH XÁC</p>
+            
+            <div class="glass-panel p-6 text-center mb-8 min-w-[250px]">
+                <p class="text-slate-400 text-xs uppercase tracking-widest mb-2 font-bold">TỔNG ĐIỂM</p>
+                <p id="final-score" class="text-amber-400 text-6xl font-black text-glow">0</p>
+                <p id="fail-match-rate" class="text-red-400 text-lg font-bold mt-4">Khớp: 0%</p>
+            </div>
+            
+            <div class="flex gap-4">
+                <button onclick="showMenu()" class="px-6 py-3 bg-slate-700 text-white rounded-full font-bold hover:bg-slate-600 transition-all">MENU</button>
+                <button onclick="startGame()" class="px-8 py-3 bg-sky-500 text-white rounded-full font-black text-lg tracking-wider hover:bg-sky-400 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(56,189,248,0.4)]">CHƠI LẠI</button>
             </div>
         </div>
     </div>
+    
+    <canvas id="match-canvas" width="100" height="100"></canvas>
 
-    <div id="overlay" class="absolute inset-0 bg-black/60 z-50 hidden opacity-0 transition-opacity duration-300" onclick="closeAllPanels()"></div>
+<script>
+/**
+ * --- DYNAMIC SHAPE GENERATOR (LOGICAL CUTS ONLY) ---
+ */
+const ShapeGenerator = {
+    createTriangle: () => [{x: -0.8, y: 0.8}, {x: 0.8, y: 0.8}, {x: -0.8, y: -0.8}],
+    createRect: () => [{x: -1, y: -0.4}, {x: 1, y: -0.4}, {x: 1, y: 0.4}, {x: -1, y: 0.4}],
+    createTrapezoid: () => [{x: -0.8, y: 0.8}, {x: 0.8, y: 0.8}, {x: 0.4, y: -0.8}, {x: -0.8, y: -0.8}],
+    createHouse: () => [{x: -0.8, y: 0.8}, {x: 0.8, y: 0.8}, {x: 0.8, y: -0.2}, {x: 0, y: -0.8}, {x: -0.8, y: -0.2}],
+    createLShape: () => [{x: -0.6, y: 0.6}, {x: 0.6, y: 0.6}, {x: 0.6, y: 0}, {x: 0, y: 0}, {x: 0, y: -0.6}, {x: -0.6, y: -0.6}],
+    createArrowhead: () => [{x: -0.8, y: 0.8}, {x: 0.8, y: 0.8}, {x: 0, y: -0.8}, {x: 0, y: 0.2}],
+    createChevron: () => [{x: -0.8, y: -0.8}, {x: 0.8, y: -0.8}, {x: 0.8, y: 0.8}, {x: 0, y: 0.2}, {x: -0.8, y: 0.8}],
 
-    <!-- Bảng Cài Đặt (Settings) -->
-    <div id="settingsPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 max-h-[85vh] overflow-y-auto transform translate-y-full pb-6">
-        <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-1"></div>
-        <div class="relative w-full flex justify-center items-center mb-1">
-            <h2 class="text-lg font-bold text-white">Thông Số Sinh Học</h2>
-            <button onclick="closeAllPanels()" class="absolute right-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white active:scale-90 transition">✕</button>
-        </div>
-        
-        <div class="space-y-3">
-            <div>
-                <div class="flex justify-between text-[11px] text-gray-400">
-                    <span>Rùa 🐢</span><span class="font-bold text-teal-400">Tốc độ thời gian</span><span>Thỏ 🐇</span>
-                </div>
-                <input type="range" id="speedSlider" min="1" max="100" value="72">
-            </div>
-
-            <div>
-                <div class="flex justify-between text-[11px] text-gray-400">
-                    <span class="font-bold text-purple-400">Giới hạn số lượng bầy (Cũ)</span>
-                    <span id="limitDisplay" class="text-white font-bold">30</span>
-                </div>
-                <input type="range" id="limitSlider" min="5" max="200" value="30">
-            </div>
-
-            <div>
-                <div class="flex justify-between text-[11px] text-gray-400">
-                    <span class="font-bold text-pink-400">Phạm vi nối bầy (ô)</span>
-                    <span id="distanceDisplay" class="text-white font-bold">15</span>
-                </div>
-                <input type="range" id="distanceSlider" min="2" max="50" value="15">
-            </div>
-
-            <div>
-                <div class="flex justify-between text-[11px] text-gray-400">
-                    <span class="font-bold text-blue-400">Tập tính bầy đàn (%)</span>
-                    <span id="flockDisplay" class="text-white font-bold">40</span>
-                </div>
-                <input type="range" id="flockSlider" min="0" max="100" value="40">
-            </div>
-        </div>
-
-        <div class="flex flex-col gap-2 mt-1">
-            <label class="flex items-center justify-between p-2.5 rounded-xl bg-slate-800/50 border border-slate-700 active:bg-slate-700 transition">
-                <span class="font-semibold text-xs">Tự động sinh ngẫu nhiên</span>
-                <input type="checkbox" id="autoSpawnCheck" checked class="w-4 h-4 accent-teal-500">
-            </label>
-            <label class="flex items-center justify-between p-2.5 rounded-xl bg-red-900/20 border border-red-900/50 active:bg-red-900/40 transition">
-                <span class="font-semibold text-xs text-red-300">Kích hoạt di chuyển hỗn loạn</span>
-                <input type="checkbox" id="chaosCheck" class="w-4 h-4 accent-red-500">
-            </label>
-        </div>
-
-        <button onclick="closeAllPanels()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-700 text-white font-bold border border-slate-600 active:bg-slate-600 transition">
-            Đóng Cài Đặt
-        </button>
-    </div>
-
-    <!-- Bảng Công Cụ Bút Vẽ (Tools) -->
-    <div id="toolsPanel" class="absolute bottom-0 left-0 w-full glass-solid rounded-t-3xl p-4 z-50 hidden flex-col gap-3 transform translate-y-full pb-6">
-        <div class="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-1"></div>
-        <div class="relative w-full flex justify-center items-center mb-1">
-            <h2 class="text-lg font-bold text-white">Công Cụ Sáng Tạo</h2>
-            <button onclick="closeAllPanels()" class="absolute right-0 w-8 h-8 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-xs font-bold text-gray-300 hover:text-white active:scale-90 transition">✕</button>
-        </div>
-        
-        <div class="grid grid-cols-3 gap-2">
-            <button onclick="setBrush(0)" id="brush0" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-teal-500 bg-teal-500/20 transition">
-                <span class="text-xl">👆</span>
-                <span class="text-[10px] font-bold">Đơn lẻ</span>
-            </button>
-            <button onclick="setBrush(1)" id="brush1" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">💣</span>
-                <span class="text-[10px] font-bold">Bom (50)</span>
-            </button>
-            <button onclick="setBrush(2)" id="brush2" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">⭕</span>
-                <span class="text-[10px] font-bold">Vòng tròn</span>
-            </button>
-            <!-- Thêm các Dạng Pattern Conway's Game of Life -->
-            <button onclick="setBrush(3)" id="brush3" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">🚀</span>
-                <span class="text-[10px] font-bold">Glider</span>
-            </button>
-            <button onclick="setBrush(4)" id="brush4" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">🚥</span>
-                <span class="text-[10px] font-bold">Blinker</span>
-            </button>
-            <button onclick="setBrush(5)" id="brush5" class="flex flex-col items-center gap-1 p-2 rounded-xl border-2 border-transparent bg-slate-800 active:bg-slate-700 transition">
-                <span class="text-xl">🧱</span>
-                <span class="text-[10px] font-bold">Block</span>
-            </button>
-        </div>
-
-        <label class="flex items-center justify-between p-3 mt-1 rounded-xl bg-yellow-900/20 border border-yellow-700/50 active:bg-yellow-900/40 transition">
-            <span class="font-bold text-sm text-yellow-400">✨ Bật vệt sáng đuôi</span>
-            <input type="checkbox" id="trailCheck" class="w-4 h-4 accent-yellow-500">
-        </label>
-
-        <button onclick="closeAllPanels()" class="mt-2 w-full py-2.5 rounded-xl bg-slate-700 text-white font-bold border border-slate-600 active:bg-slate-600 transition">
-            Đóng Công Cụ
-        </button>
-    </div>
-
-    <!-- Script Logic Game -->
-    <script>
-        // --- QUẢN LÝ UI STATE ---
-        const mainMenu = document.getElementById('mainMenu');
-        const gameHUD = document.getElementById('gameHUD');
-        const overlay = document.getElementById('overlay');
-        const settingsPanel = document.getElementById('settingsPanel');
-        const toolsPanel = document.getElementById('toolsPanel');
-        const canvas = document.getElementById('worldCanvas');
-        let gameState = 'menu';
-
-        // --- CÁC HÌNH KHỐI CÓ Ý NGHĨA ---
-        const SHAPE_TEMPLATES = [
-            // Trái tim
-            [
-                "  XX   XX  ",
-                " XXXX XXXX ",
-                "XXXXXXXXXXX",
-                " XXXXXXXXX ",
-                "  XXXXXXX  ",
-                "   XXXXX   ",
-                "    XXX    ",
-                "     X     "
-            ],
-            // Mặt cười
-            [
-                " X     X ",
-                "         ",
-                "X       X",
-                " X     X ",
-                "  XXXXX  "
-            ],
-            // Ngôi sao
-            [
-                "    X    ",
-                "   XXX   ",
-                " XXXXXXX ",
-                "  XXXXX  ",
-                " X  X  X ",
-                "X       X"
-            ],
-            // Tàu vũ trụ (LWSS)
-            [
-                " X  X ",
-                "     X",
-                "X    X",
-                " XXXXX"
-            ],
-            // Pulsar (Dao động Game of Life)
-            [
-                "  XXX   XXX  ",
-                "             ",
-                "X    X X    X",
-                "X    X X    X",
-                "X    X X    X",
-                "  XXX   XXX  ",
-                "             ",
-                "  XXX   XXX  ",
-                "X    X X    X",
-                "X    X X    X",
-                "X    X X    X",
-                "             ",
-                "  XXX   XXX  "
-            ],
-            // Space Invader (Quái vật không gian)
-            [
-                "  X     X  ",
-                "   X   X   ",
-                "  XXXXXXX  ",
-                " XX XXX XX ",
-                "XXXXXXXXXXX",
-                "X XXXXXXX X",
-                "X X     X X",
-                "   XX XX   "
-            ],
-            // Kok's Galaxy (Thiên hà)
-            [
-                "XXXXXX XX",
-                "XXXXXX XX",
-                "       XX",
-                "XX     XX",
-                "XX     XX",
-                "XX       ",
-                "XX XXXXXX",
-                "XX XXXXXX"
-            ],
-            // Pentadecathlon (Dao động dài)
-            [
-                "  X    X  ",
-                "XX XXXX XX",
-                "  X    X  "
-            ],
-            // Diamond (Kim cương)
-            [
-                "   X   ",
-                "  XXX  ",
-                " XXXXX ",
-                "XXXXXXX",
-                " XXXXX ",
-                "  XXX  ",
-                "   X   "
-            ],
-            // Toad (Con cóc - Dao động)
-            [
-                " XXX",
-                "XXX "
-            ],
-            // Beacon (Ngọn hải đăng - Dao động)
-            [
-                "XX  ",
-                "XX  ",
-                "  XX",
-                "  XX"
-            ]
+    getRandomTarget: () => {
+        const categories = [
+            { name: 'TAM GIÁC', gen: ShapeGenerator.createTriangle },
+            { name: 'CHỮ NHẬT', gen: ShapeGenerator.createRect },
+            { name: 'HÌNH THANG', gen: ShapeGenerator.createTrapezoid },
+            { name: 'NGÔI NHÀ', gen: ShapeGenerator.createHouse },
+            { name: 'CHỮ L', gen: ShapeGenerator.createLShape },
+            { name: 'MŨI TÊN', gen: ShapeGenerator.createArrowhead },
+            { name: 'ĐUÔI NHEO', gen: ShapeGenerator.createChevron }
         ];
-
-        function startGame() {
-            gameState = 'playing';
-            
-            mainMenu.classList.replace('fade-enter', 'fade-exit');
-            setTimeout(() => {
-                mainMenu.classList.add('hidden');
-                mainMenu.classList.replace('fade-exit', 'fade-enter');
-            }, 300);
-
-            gameHUD.classList.remove('hidden');
-            canvas.classList.replace('canvas-blur', 'canvas-clear');
-            
-            if(!isPlaying) togglePause();
-            if(creatures.length === 0) initInitial();
-        }
-
-        function exitToMenu() {
-            gameState = 'menu';
-            if(isPlaying) togglePause();
-            
-            gameHUD.classList.add('hidden');
-            mainMenu.classList.remove('hidden');
-            canvas.classList.replace('canvas-clear', 'canvas-blur');
-        }
-
-        function openSetup() { openSettings(); }
-
-        // --- QUẢN LÝ BOTTOM SHEETS ---
-        function openPanel(panel) {
-            overlay.classList.remove('hidden');
-            setTimeout(() => overlay.style.opacity = '1', 10);
-            
-            panel.classList.remove('hidden');
-            panel.classList.remove('slide-down');
-            panel.classList.add('slide-up');
-        }
-
-        function closeAllPanels() {
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.classList.add('hidden'), 300);
-
-            [settingsPanel, toolsPanel].forEach(panel => {
-                if(!panel.classList.contains('hidden')) {
-                    panel.classList.replace('slide-up', 'slide-down');
-                    setTimeout(() => panel.classList.add('hidden'), 300);
-                }
-            });
-        }
-
-        function openSettings() { closeAllPanels(); openPanel(settingsPanel); }
-        function openTools() { closeAllPanels(); openPanel(toolsPanel); }
-
-        function setBrush(type) {
-            brushMode = type;
-            const icons = ['1', 'B', 'O', 'G', 'L', 'K'];
-            document.getElementById('brushIndicator').innerText = icons[type];
-            for(let i=0; i<=5; i++) {
-                const btn = document.getElementById('brush' + i);
-                if(btn) {
-                    if(i === type) {
-                        btn.classList.add('border-teal-500', 'bg-teal-500/20');
-                        btn.classList.remove('border-transparent', 'bg-slate-800');
-                    } else {
-                        btn.classList.remove('border-teal-500', 'bg-teal-500/20');
-                        btn.classList.add('border-transparent', 'bg-slate-800');
-                    }
-                }
-            }
-            closeAllPanels();
-        }
-
-        // --- LOGIC MÔ PHỎNG CORE ---
-        const ctx = canvas.getContext('2d');
         
-        const TILE_SIZE = 10; 
-        let LOGIC_TICK_RATE = 150; 
-        let colonyDeathLimit = 30; 
-        let colonyDistance = 15; 
-        let flockTendency = 0.4; 
-        let isChaosMode = false; 
+        const cat = categories[Math.floor(Math.random() * categories.length)];
+        const normalizedPoints = cat.gen();
         
-        let isTrailMode = false;
-        let brushMode = 0; 
-        
-        let cosmicWindX = 0;
-        let cosmicWindY = 0;
-
-        let creatures = [];
-        let particles = [];
-        let activeColonyCount = 0;
-        let tickCounter = 0; // Bộ đếm nhịp để giảm tải tính toán
-        
-        let cameraX = 0; 
-        let cameraY = 0;
-        let zoom = 1;
-        let isPanning = false;
-        let lastPanX = 0;
-        let lastPanY = 0;
-
-        let isPlaying = false;
-        let isDragging = false;
-        let autoSpawnEnabled = true;
-        let lastLogicTime = performance.now();
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        function mutateColor(baseColor) {
-            let match = baseColor.match(/hsl\((\d+)/);
-            if (match) {
-                let hue = parseInt(match[1]);
-                hue = (hue + Math.floor(Math.random() * 60 - 30) + 360) % 360;
-                return `hsl(${hue}, 100%, 70%)`;
-            }
-            return `hsl(${Math.random() * 360}, 100%, 70%)`;
-        }
-
-        class Creature {
-            constructor(x, y, color = null) {
-                this.x = x; this.y = y;
-                this.lastX = x; this.lastY = y;
-                this.rotation = Math.floor(Math.random() * 4); 
-                this.color = color || `hsl(${Math.random() * 360}, 100%, 70%)`;
-                this.cooldown = Math.floor(Math.random() * 20); 
-                this.colonyId = null; 
-                this.hasColony = false;
-                this.stepDelay = Math.floor(Math.random() * 3) + 1; 
-                this.stepTimer = 0;
-                this.isHyper = Math.random() < 0.15; 
-                this.shapeType = Math.random() < 0.5 ? 'L' : 'J'; 
-            }
-
-            getCells(cx, cy, rot) {
-                let cells = [{x: cx, y: cy}]; 
-                if (this.shapeType === 'L') {
-                    if (rot === 0) cells.push({x: cx, y: cy - 1}, {x: cx + 1, y: cy});
-                    else if (rot === 1) cells.push({x: cx + 1, y: cy}, {x: cx, y: cy + 1});
-                    else if (rot === 2) cells.push({x: cx, y: cy + 1}, {x: cx - 1, y: cy});
-                    else if (rot === 3) cells.push({x: cx - 1, y: cy}, {x: cx, y: cy - 1});
-                } else { 
-                    if (rot === 0) cells.push({x: cx, y: cy - 1}, {x: cx - 1, y: cy});
-                    else if (rot === 1) cells.push({x: cx + 1, y: cy}, {x: cx, y: cy - 1});
-                    else if (rot === 2) cells.push({x: cx, y: cy + 1}, {x: cx + 1, y: cy});
-                    else if (rot === 3) cells.push({x: cx - 1, y: cy}, {x: cx, y: cy + 1});
-                }
-                return cells;
-            }
-
-            getOccupiedCells() { return this.getCells(this.x, this.y, this.rotation); }
-
-            move(occupiedMap) {
-                if (this.cooldown > 0) this.cooldown--;
-                this.stepTimer++;
-                if (this.stepTimer < this.stepDelay) {
-                    this.lastX = this.x; this.lastY = this.y;
-                    return;
-                }
-                this.stepTimer = 0;
-                this.lastX = this.x; this.lastY = this.y;
-
-                let dx = Math.floor(Math.random() * 3) - 1; 
-                let dy = Math.floor(Math.random() * 3) - 1; 
-
-                if (this.hasColony && Math.random() < flockTendency) {
-                    let distToCenter = Math.max(Math.abs(this.colonyCenterX - this.x), Math.abs(this.colonyCenterY - this.y));
-                    if (distToCenter > 2) {
-                        if (Math.random() < 0.7) dx = this.colonyCenterX > this.x ? 1 : (this.colonyCenterX < this.x ? -1 : 0);
-                        if (Math.random() < 0.7) dy = this.colonyCenterY > this.y ? 1 : (this.colonyCenterY < this.y ? -1 : 0);
-                    }
-                }
-
-                if (this.isHyper) { dx *= 2; dy *= 2; }
-                if (Math.random() < 0.4) { dx += cosmicWindX; dy += cosmicWindY; }
-
-                let nx = this.x + dx;
-                let ny = this.y + dy;
-                let nrot = Math.random() < 0.5 ? Math.floor(Math.random() * 4) : this.rotation;
-
-                let newCells = this.getCells(nx, ny, nrot);
-                let collision = false;
-                for (let cell of newCells) {
-                    let occupant = occupiedMap.get(`${cell.x},${cell.y}`);
-                    if (occupant && occupant !== this) { collision = true; break; }
-                }
-
-                if (!collision) {
-                    this.getOccupiedCells().forEach(cell => occupiedMap.delete(`${cell.x},${cell.y}`));
-                    this.x = nx; this.y = ny; this.rotation = nrot;
-                    this.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, this));
-                }
-            }
-
-            // TỐI ƯU CULLING: Không vẽ nếu cá thể nằm ngoài khung hình camera
-            draw(ctx, progress, bounds) {
-                if (this.x < bounds.left || this.x > bounds.right || this.y < bounds.top || this.y > bounds.bottom) return;
-
-                let renderX = this.lastX + (this.x - this.lastX) * progress;
-                let renderY = this.lastY + (this.y - this.lastY) * progress;
-
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                
-                const off = 1; 
-                const size = TILE_SIZE - 2;
-
-                let renderCells = this.getCells(renderX, renderY, this.rotation);
-                renderCells.forEach(cell => {
-                    ctx.rect(cell.x * TILE_SIZE + off, cell.y * TILE_SIZE + off, size, size);
-                });
-                ctx.fill(); 
-            }
-        }
-
-        class Particle {
-            constructor(x, y, color) {
-                this.x = x * TILE_SIZE + TILE_SIZE / 2;
-                this.y = y * TILE_SIZE + TILE_SIZE / 2;
-                this.vx = (Math.random() - 0.5) * 2; 
-                this.vy = (Math.random() - 0.5) * 2; 
-                this.life = 1.0;
-                this.color = color;
-            }
-            update() { this.x += this.vx; this.y += this.vy; this.life -= 0.08; } 
-            
-            // TỐI ƯU VẼ: Dùng fillRect vẽ hình vuông thay vì arc (vẽ đường tròn rất nặng CPU)
-            draw(ctx, bounds) {
-                if (this.life <= 0) return;
-                
-                let gridX = Math.floor(this.x / TILE_SIZE);
-                let gridY = Math.floor(this.y / TILE_SIZE);
-                if (gridX < bounds.left || gridX > bounds.right || gridY < bounds.top || gridY > bounds.bottom) return;
-
-                ctx.globalAlpha = this.life;
-                ctx.fillStyle = this.color;
-                const size = TILE_SIZE * 0.6;
-                ctx.fillRect(this.x - size/2, this.y - size/2, size, size);
-                ctx.globalAlpha = 1.0;
-            }
-        }
-
-        function updateLogic() {
-            tickCounter++;
-
-            // Cập nhật hiệu ứng gió UI
-            if (Math.random() < 0.05) {
-                cosmicWindX = Math.floor(Math.random() * 3) - 1;
-                cosmicWindY = Math.floor(Math.random() * 3) - 1;
-                let windMap = {"0,0": "Tĩnh lặng 🎐", "1,0": "Đông ➡️", "-1,0": "Tây ⬅️", "0,1": "Nam ⬇️", "0,-1": "Bắc ⬆️", "1,1": "Đông Nam ↘️", "-1,1": "Tây Nam ↙️", "1,-1": "Đông Bắc ↗️", "-1,-1": "Tây Bắc ↖️"};
-                document.getElementById('windDisplay').innerText = windMap[`${cosmicWindX},${cosmicWindY}`];
-            }
-
-            // TỐI ƯU CHUỖI: Dùng Object để lưu tọa độ lân cận thay vì phải .split(',') chuỗi String
-            let currentPos = new Map();
-            creatures.forEach(c => {
-                let key = `${c.x},${c.y}`;
-                if (!currentPos.has(key)) currentPos.set(key, c);
-            });
-
-            let neighborCounts = new Map(); // value là object {count, x, y}
-            currentPos.forEach((c, key) => {
-                for (let dx = -1; dx <= 1; dx++) {
-                    for (let dy = -1; dy <= 1; dy++) {
-                        if (dx === 0 && dy === 0) continue;
-                        let nx = c.x + dx;
-                        let ny = c.y + dy;
-                        let nKey = `${nx},${ny}`;
-                        let nData = neighborCounts.get(nKey);
-                        if (!nData) {
-                            neighborCounts.set(nKey, {count: 1, x: nx, y: ny});
-                        } else {
-                            nData.count++;
-                        }
-                    }
-                }
-            });
-
-            let nextCreatures = [];
-            let toRemove = new Set();
-            let newBorns = [];
-
-            // Áp dụng luật Game Of Life
-            currentPos.forEach((c, key) => {
-                let nData = neighborCounts.get(key);
-                let count = nData ? nData.count : 0;
-                if (count === 2 || count === 3) {
-                    nextCreatures.push(c); 
-                } else {
-                    toRemove.add(c);
-                    // TỐI ƯU: Chỉ cho phép sinh thêm Particle nếu số lượng chưa quá nhiều
-                    if (particles.length < 800) {
-                        particles.push(new Particle(c.x, c.y, c.color));
-                    }
-                }
-            });
-
-            // Sinh sản
-            neighborCounts.forEach((nData, key) => {
-                if (nData.count === 3 && !currentPos.has(key)) {
-                    let nx = nData.x;
-                    let ny = nData.y;
-                    
-                    let neighborColors = [];
-                    for (let dx = -1; dx <= 1; dx++) {
-                        for (let dy = -1; dy <= 1; dy++) {
-                            if (dx === 0 && dy === 0) continue;
-                            let nKey = `${nx+dx},${ny+dy}`;
-                            if (currentPos.has(nKey)) neighborColors.push(currentPos.get(nKey).color);
-                        }
-                    }
-                    let baseColor = neighborColors.length > 0 ? neighborColors[Math.floor(Math.random() * neighborColors.length)] : null;
-                    newBorns.push(new Creature(nx, ny, baseColor ? mutateColor(baseColor) : null));
-                }
-            });
-
-            creatures = nextCreatures.concat(newBorns);
-
-            // Xử lý Chaos Mode
-            if (isChaosMode) {
-                let occupiedMap = new Map();
-                creatures.forEach(c => {
-                    c.getOccupiedCells().forEach(cell => occupiedMap.set(`${cell.x},${cell.y}`, c));
-                });
-                creatures.forEach(c => c.move(occupiedMap));
-            } else {
-                creatures.forEach(c => {
-                    c.lastX = c.x; c.lastY = c.y;
-                });
-            }
-
-            // TỐI ƯU: Tự động ngắt auto spawn nếu số lượng đã quá tải (>6000 cá thể)
-            if (creatures.length > 6000) {
-                // Tạm thời bỏ qua auto spawn
-            } else if (autoSpawnEnabled && Math.random() < 0.1) {
-                let camWorldX = Math.floor(cameraX / TILE_SIZE);
-                let camWorldY = Math.floor(cameraY / TILE_SIZE);
-                let viewWidth = Math.floor((canvas.width / zoom) / TILE_SIZE);
-                let viewHeight = Math.floor((canvas.height / zoom) / TILE_SIZE);
-                
-                let cx = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth);
-                let cy = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight);
-                
-                let type = Math.random();
-                let pts = [];
-                
-                if (type < 0.15) { 
-                    let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
-                    let h = template.length;
-                    let w = Math.max(...template.map(r => r.length));
-                    let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; 
-                    
-                    for (let y = 0; y < h; y++) {
-                        for (let x = 0; x < template[y].length; x++) {
-                            if (template[y][x] === 'X') {
-                                let rx = cx + x - Math.floor(w/2);
-                                let ry = cy + y - Math.floor(h/2);
-                                if (!currentPos.has(`${rx},${ry}`)) {
-                                    creatures.push(new Creature(rx, ry, mutateColor(colorBase)));
-                                }
-                            }
-                        }
-                    }
-                } else if (type < 0.4) {
-                    let gliderVariations = [
-                        [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   
-                        [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  
-                        [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], 
-                        [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] 
-                    ];
-                    pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)]; 
-                } else if (type < 0.7) {
-                    pts = [{x:-1,y:0}, {x:0,y:0}, {x:1,y:0}]; 
-                } else {
-                    pts = [{x:0,y:0}, {x:1,y:0}, {x:0,y:1}, {x:1,y:1}]; 
-                }
-                
-                pts.forEach(p => {
-                    let rx = cx + p.x;
-                    let ry = cy + p.y;
-                    if (!currentPos.has(`${rx},${ry}`)) {
-                        creatures.push(new Creature(rx, ry));
-                    }
-                });
-            }
-            
-            // TỐI ƯU THROTTLING: Chỉ tính toán BFS quần xã (rất nặng) sau mỗi 4 nhịp thay vì liên tục
-            if (tickCounter % 4 === 0) {
-                let spatialGrid = new Map();
-                let hashSize = colonyDistance; 
-                creatures.forEach((c, index) => {
-                    let gx = Math.floor(c.x / hashSize);
-                    let gy = Math.floor(c.y / hashSize);
-                    let key = `${gx},${gy}`;
-                    if (!spatialGrid.has(key)) spatialGrid.set(key, []);
-                    spatialGrid.get(key).push(index);
-                });
-
-                let visited = new Set();
-                activeColonyCount = 0;
-
-                for (let i = 0; i < creatures.length; i++) {
-                    if (visited.has(i)) continue;
-                    let component = [];
-                    let queue = [i];
-                    visited.add(i);
-                    let head = 0;
-                    while (head < queue.length) {
-                        let curr = queue[head++];
-                        let currCreature = creatures[curr];
-                        component.push(curr);
-
-                        let cgx = Math.floor(currCreature.x / hashSize);
-                        let cgy = Math.floor(currCreature.y / hashSize);
-
-                        for (let ox = -1; ox <= 1; ox++) {
-                            for (let oy = -1; oy <= 1; oy++) {
-                                let neighbors = spatialGrid.get(`${cgx + ox},${cgy + oy}`);
-                                if (neighbors) {
-                                    for (let j of neighbors) {
-                                        if (visited.has(j)) continue;
-                                        let dx = Math.abs(currCreature.x - creatures[j].x);
-                                        let dy = Math.abs(currCreature.y - creatures[j].y);
-                                        if (dx <= colonyDistance && dy <= colonyDistance) {
-                                            visited.add(j); queue.push(j);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    let sumX = 0, sumY = 0;
-                    component.forEach(idx => { sumX += creatures[idx].x; sumY += creatures[idx].y; });
-                    let centerX = sumX / component.length;
-                    let centerY = sumY / component.length;
-
-                    component.forEach(idx => {
-                        creatures[idx].colonyCenterX = centerX;
-                        creatures[idx].colonyCenterY = centerY;
-                        creatures[idx].hasColony = component.length > 1;
-                    });
-
-                    if (component.length > 1) activeColonyCount++;
-                }
-            }
-
-            if(gameState === 'playing') {
-                document.getElementById('popCount').innerText = creatures.length;
-                document.getElementById('colonyCount').innerText = activeColonyCount;
-            }
-        }
-
-        function animate(time) {
-            requestAnimationFrame(animate);
-
-            if (isPlaying && gameState === 'playing') {
-                if (time - lastLogicTime > LOGIC_TICK_RATE) {
-                    updateLogic();
-                    lastLogicTime = time;
-                }
-            } else {
-                lastLogicTime = time;
-            }
-
-            if (isTrailMode && !isPanning && gameState === 'playing') {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.08)'; 
-            } else {
-                ctx.fillStyle = '#0f172a';
-            }
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.scale(zoom, zoom);
-            ctx.translate(-cameraX, -cameraY);
-
-            // Tính toán khung nhìn giới hạn (Bounds) để Culling
-            let bounds = {
-                left: Math.floor((cameraX - (canvas.width / 2) / zoom) / TILE_SIZE) - 3,
-                right: Math.ceil((cameraX + (canvas.width / 2) / zoom) / TILE_SIZE) + 3,
-                top: Math.floor((cameraY - (canvas.height / 2) / zoom) / TILE_SIZE) - 3,
-                bottom: Math.ceil((cameraY + (canvas.height / 2) / zoom) / TILE_SIZE) + 3
-            };
-
-            if (!isTrailMode) {
-                let gridStep = TILE_SIZE;
-                if (zoom < 0.4) gridStep = TILE_SIZE * 5; 
-                if (zoom < 0.1) gridStep = TILE_SIZE * 20; 
-                
-                let gridAlpha = Math.max(0.01, 0.03 * zoom);
-                ctx.strokeStyle = `rgba(255, 255, 255, ${gridAlpha})`;
-                ctx.lineWidth = 1 / zoom; 
-                
-                let startX = cameraX - (canvas.width / 2) / zoom;
-                let endX = cameraX + (canvas.width / 2) / zoom;
-                let startY = cameraY - (canvas.height / 2) / zoom;
-                let endY = cameraY + (canvas.height / 2) / zoom;
-
-                let firstLineX = Math.floor(startX / gridStep) * gridStep;
-                let firstLineY = Math.floor(startY / gridStep) * gridStep;
-
-                ctx.beginPath();
-                for (let x = firstLineX; x <= endX; x += gridStep) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
-                for (let y = firstLineY; y <= endY; y += gridStep) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
-                ctx.stroke();
-            }
-
-            let progress = (isPlaying && gameState === 'playing') ? Math.max(0, Math.min((time - lastLogicTime) / LOGIC_TICK_RATE, 1.0)) : 1.0;
-            // Truyền bounds vào hàm vẽ để áp dụng Culling
-            creatures.forEach(c => c.draw(ctx, progress, bounds));
-
-            particles.forEach(p => { p.update(); p.draw(ctx, bounds); });
-            ctx.restore(); 
-
-            particles = particles.filter(p => p.life > 0);
-        }
-
-        // --- ĐIỀU KHIỂN & SỰ KIỆN TƯƠNG TÁC ---
-        function screenToWorld(sx, sy) {
-            let wx = (sx - canvas.width / 2) / zoom + cameraX;
-            let wy = (sy - canvas.height / 2) / zoom + cameraY;
-            return { x: Math.floor(wx / TILE_SIZE), y: Math.floor(wy / TILE_SIZE) };
-        }
-
-        function spawnAtMouse(x, y) {
-            if(gameState !== 'playing') return;
-            let worldPos = screenToWorld(x, y);
-            
-            if (brushMode === 0) {
-                creatures.push(new Creature(worldPos.x, worldPos.y));
-            } else if (brushMode === 1) {
-                for (let i = 0; i < 50; i++) {
-                    let rx = worldPos.x + Math.floor((Math.random() - 0.5) * 6);
-                    let ry = worldPos.y + Math.floor((Math.random() - 0.5) * 6);
-                    creatures.push(new Creature(rx, ry));
-                }
-            } else if (brushMode === 2) {
-                let radius = 12;
-                for (let i = 0; i < 24; i++) {
-                    let angle = (i / 24) * Math.PI * 2;
-                    let rx = worldPos.x + Math.floor(Math.cos(angle) * radius);
-                    let ry = worldPos.y + Math.floor(Math.sin(angle) * radius);
-                    creatures.push(new Creature(rx, ry));
-                }
-            } else if (brushMode === 3) {
-                // Tàu lượn (Glider) ngẫu nhiên 4 hướng
-                let gliderVariations = [
-                    [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],   // 4h
-                    [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],  // 8h
-                    [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}], // 2h
-                    [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}] // 10h
-                ];
-                let pts = gliderVariations[Math.floor(Math.random() * gliderVariations.length)];
-                pts.forEach(p => creatures.push(new Creature(worldPos.x + p.x, worldPos.y + p.y)));
-            } else if (brushMode === 4) {
-                // Đèn nháy (Blinker)
-                let pts = [{x:-1,y:0}, {x:0,y:0}, {x:1,y:0}];
-                pts.forEach(p => creatures.push(new Creature(worldPos.x + p.x, worldPos.y + p.y)));
-            } else if (brushMode === 5) {
-                // Khối vuông (Block)
-                let pts = [{x:0,y:0}, {x:1,y:0}, {x:0,y:1}, {x:1,y:1}];
-                pts.forEach(p => creatures.push(new Creature(worldPos.x + p.x, worldPos.y + p.y)));
-            }
-        }
-
-        let initialPinchDistance = null;
-        let initialZoom = 1;
-
-        canvas.addEventListener('touchstart', (e) => {
-            if(gameState !== 'playing') return;
-            if (e.touches.length === 1) {
-                isDragging = true;
-                lastPanX = e.touches[0].clientX;
-                lastPanY = e.touches[0].clientY;
-                spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY);
-            } else if (e.touches.length === 2) {
-                isDragging = false;
-                isPanning = false;
-                initialPinchDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                initialZoom = zoom;
-            }
-        }, {passive: false});
-
-        canvas.addEventListener('touchmove', (e) => {
-            if(gameState !== 'playing') return;
-            e.preventDefault(); 
-            if (e.touches.length === 1 && isDragging) {
-                let dx = e.touches[0].clientX - lastPanX;
-                let dy = e.touches[0].clientY - lastPanY;
-                cameraX -= dx / zoom;
-                cameraY -= dy / zoom;
-                lastPanX = e.touches[0].clientX;
-                lastPanY = e.touches[0].clientY;
-                
-                let spawnChance = brushMode >= 3 ? 0.02 : (brushMode === 0 ? 0.2 : 0.05); 
-                if (Math.random() < spawnChance) spawnAtMouse(e.touches[0].clientX, e.touches[0].clientY);
-            } else if (e.touches.length === 2) {
-                let currentDistance = Math.hypot(
-                    e.touches[0].clientX - e.touches[1].clientX,
-                    e.touches[0].clientY - e.touches[1].clientY
-                );
-                zoom = initialZoom * (currentDistance / initialPinchDistance);
-                zoom = Math.max(0.05, Math.min(zoom, 5));
-            }
-        }, {passive: false});
-
-        canvas.addEventListener('touchend', () => { isDragging = false; initialPinchDistance = null; });
-
-        canvas.addEventListener('pointerdown', (e) => {
-            if(gameState !== 'playing' || e.pointerType === 'touch') return;
-            if (e.button === 2 || e.button === 1) { 
-                isPanning = true; lastPanX = e.clientX; lastPanY = e.clientY;
-            } else {
-                isDragging = true; spawnAtMouse(e.clientX, e.clientY);
-            }
-        });
-        canvas.addEventListener('pointerup', (e) => { if(e.pointerType === 'touch') return; isPanning = false; isDragging = false; });
-        canvas.addEventListener('pointermove', (e) => {
-            if(gameState !== 'playing' || e.pointerType === 'touch') return;
-            if (isPanning) {
-                cameraX -= (e.clientX - lastPanX) / zoom;
-                cameraY -= (e.clientY - lastPanY) / zoom;
-                lastPanX = e.clientX; lastPanY = e.clientY;
-            } else if (isDragging) {
-                let spawnChance = brushMode >= 3 ? 0.02 : (brushMode === 0 ? 0.2 : 0.05); 
-                if (Math.random() < spawnChance) spawnAtMouse(e.clientX, e.clientY);
-            }
-        });
-        canvas.addEventListener('wheel', (e) => {
-            if(gameState !== 'playing') return;
-            let zoomFactor = 1.1;
-            let wx = (e.clientX - canvas.width / 2) / zoom + cameraX;
-            let wy = (e.clientY - canvas.height / 2) / zoom + cameraY;
-
-            if (e.deltaY > 0) zoom /= zoomFactor; else zoom *= zoomFactor;
-            zoom = Math.max(0.01, Math.min(zoom, 10)); 
-
-            let nx = (e.clientX - canvas.width / 2) / zoom + cameraX;
-            let ny = (e.clientY - canvas.height / 2) / zoom + cameraY;
-            cameraX -= (nx - wx); cameraY -= (ny - wy);
-        }, { passive: true });
-        canvas.addEventListener('contextmenu', e => e.preventDefault());
-
-        function togglePause() {
-            isPlaying = !isPlaying;
-            const btn = document.getElementById('btnToggle');
-            btn.innerHTML = isPlaying ? '<span class="text-sm">⏸</span>' : '<span class="text-sm">▶️</span>';
-            btn.className = isPlaying 
-                ? 'w-10 h-10 rounded-full bg-teal-600/80 flex items-center justify-center active:scale-90 transition border border-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.5)]'
-                : 'w-10 h-10 rounded-full bg-amber-600/80 flex items-center justify-center active:scale-90 transition border border-amber-500 shadow-[0_0_10px_rgba(217,119,6,0.5)] pl-1';
-        }
-
-        function spawnRandomBatch(e) {
-            let camWorldX = Math.floor(cameraX / TILE_SIZE);
-            let camWorldY = Math.floor(cameraY / TILE_SIZE);
-            let viewWidth = Math.floor((canvas.width / zoom) / TILE_SIZE);
-            let viewHeight = Math.floor((canvas.height / zoom) / TILE_SIZE);
-
-            let cx = camWorldX + Math.floor((Math.random() - 0.5) * viewWidth * 0.5);
-            let cy = camWorldY + Math.floor((Math.random() - 0.5) * viewHeight * 0.5);
-
-            if (Math.random() < 0.5) {
-                let template = SHAPE_TEMPLATES[Math.floor(Math.random() * SHAPE_TEMPLATES.length)];
-                let h = template.length;
-                let w = Math.max(...template.map(r => r.length));
-                let colorBase = `hsl(${Math.random() * 360}, 100%, 70%)`; 
-                
-                for (let y = 0; y < h; y++) {
-                    for (let x = 0; x < template[y].length; x++) {
-                        if (template[y][x] === 'X') {
-                            let rx = cx + x - Math.floor(w/2);
-                            let ry = cy + y - Math.floor(h/2);
-                            creatures.push(new Creature(rx, ry, mutateColor(colorBase)));
-                        }
-                    }
-                }
-            } else {
-                for (let i = 0; i < 40; i++) {
-                    let rx = cx + Math.floor((Math.random() - 0.5) * 12);
-                    let ry = cy + Math.floor((Math.random() - 0.5) * 12);
-                    creatures.push(new Creature(rx, ry));
-                }
-            }
-
-            document.getElementById('popCount').innerText = creatures.length;
-            
-            if (e && e.currentTarget) {
-                const btn = e.currentTarget;
-                btn.style.transform = 'scale(0.8)';
-                setTimeout(() => btn.style.transform = '', 150);
-            }
-        }
-
-        function clearWorld() {
-            creatures = []; particles = []; activeColonyCount = 0;
-            document.getElementById('popCount').innerText = 0;
-            document.getElementById('colonyCount').innerText = 0;
-        }
-
-        document.getElementById('speedSlider').addEventListener('input', (e) => { LOGIC_TICK_RATE = 510 - (parseInt(e.target.value) * 5); });
-        document.getElementById('limitSlider').addEventListener('input', (e) => {
-            colonyDeathLimit = parseInt(e.target.value);
-            document.getElementById('limitDisplay').innerText = colonyDeathLimit;
-        });
-        document.getElementById('distanceSlider').addEventListener('input', (e) => {
-            colonyDistance = parseInt(e.target.value);
-            document.getElementById('distanceDisplay').innerText = colonyDistance;
-        });
-        document.getElementById('flockSlider').addEventListener('input', (e) => {
-            let val = parseInt(e.target.value);
-            flockTendency = val / 100;
-            document.getElementById('flockDisplay').innerText = val;
-        });
-        document.getElementById('autoSpawnCheck').addEventListener('change', (e) => autoSpawnEnabled = e.target.checked);
-        document.getElementById('chaosCheck').addEventListener('change', (e) => {
-            isChaosMode = e.target.checked;
-        });
-        document.getElementById('trailCheck').addEventListener('change', (e) => isTrailMode = e.target.checked);
-        
-        document.getElementById('btnEra').addEventListener('click', () => {
-            let speed = Math.floor(Math.random() * 100) + 1;
-            document.getElementById('speedSlider').value = speed; LOGIC_TICK_RATE = 510 - (speed * 5);
-
-            let limit = Math.floor(Math.random() * 195) + 5;
-            document.getElementById('limitSlider').value = limit; colonyDeathLimit = limit;
-            document.getElementById('limitDisplay').innerText = limit;
-
-            let dist = Math.floor(Math.random() * 48) + 2;
-            document.getElementById('distanceSlider').value = dist; colonyDistance = dist;
-            document.getElementById('distanceDisplay').innerText = dist;
-
-            let flock = Math.floor(Math.random() * 100);
-            document.getElementById('flockSlider').value = flock; flockTendency = flock / 100;
-            document.getElementById('flockDisplay').innerText = flock;
-
-            isChaosMode = Math.random() > 0.8;
-            document.getElementById('chaosCheck').checked = isChaosMode;
-        });
-
-        // --- KHỞI TẠO BẮT ĐẦU ---
-        function initInitial() {
-            let occupiedInitial = new Set();
-            
-            for (let cluster = 0; cluster < 15; cluster++) {
-                let clusterX = Math.floor((Math.random() - 0.5) * 100); 
-                let clusterY = Math.floor((Math.random() - 0.5) * 100);
-                
-                for (let i = 0; i < 30; i++) {
-                    let rx = clusterX + Math.floor((Math.random() - 0.5) * 10);
-                    let ry = clusterY + Math.floor((Math.random() - 0.5) * 10);
-                    let key = `${rx},${ry}`;
-                    if (!occupiedInitial.has(key)) {
-                        creatures.push(new Creature(rx, ry));
-                        occupiedInitial.add(key);
-                    }
-                }
-            }
-            
-            let gliders = [
-                {x: -10, y: -10}, {x: 20, y: 15}, {x: -30, y: 20}, {x: 30, y: -20}
-            ];
-            let gliderVariations = [
-                [{x:0,y:-1}, {x:1,y:0}, {x:-1,y:1}, {x:0,y:1}, {x:1,y:1}],
-                [{x:0,y:-1}, {x:-1,y:0}, {x:1,y:1}, {x:0,y:1}, {x:-1,y:1}],
-                [{x:0,y:1}, {x:-1,y:0}, {x:1,y:-1}, {x:0,y:-1}, {x:-1,y:-1}],
-                [{x:0,y:1}, {x:1,y:0}, {x:-1,y:-1}, {x:0,y:-1}, {x:1,y:-1}]
-            ];
-            gliders.forEach((g, index) => {
-                let pts = gliderVariations[index % gliderVariations.length]; 
-                pts.forEach(p => {
-                    let key = `${g.x + p.x},${g.y + p.y}`;
-                    if (!occupiedInitial.has(key)) {
-                        creatures.push(new Creature(g.x + p.x, g.y + p.y));
-                        occupiedInitial.add(key);
-                    }
-                });
-            });
-        }
-
-        initInitial();
-        isPlaying = true; 
-        requestAnimationFrame(animate);
-
-
-        // ================= ADDICTIVE ENGINE (SAFE) =================
-
-        let AE = {
-            lastEvent: 0,
-            delay: 5000 + Math.random() * 10000,
-
-            chosen: null,
-            ripple: null,
-            nearMiss: null,
-            sync: null,
-
-            ghost: [],
-            pattern: null,
-            patternTimer: 0,
-
-            memory: null,
-            memoryTimer: 0,
-
-            cursor: {x:0,y:0},
-            pending: null,
-            rewardTimer: 0,
-
-            profile: {clicks:0,last:0,avg:0,zones:[]},
-            predicted: null,
-            predictTimer: 0
-        };
-
-        canvas.addEventListener('pointermove', (e)=>{
-            AE.cursor = screenToWorld(e.clientX, e.clientY);
-        });
-
-        canvas.addEventListener('pointerdown', ()=>{
-            let now = performance.now();
-
-            if (AE.profile.last > 0) {
-                let d = now - AE.profile.last;
-                AE.profile.avg = AE.profile.avg * 0.7 + d * 0.3;
-            }
-
-            AE.profile.last = now;
-            AE.profile.clicks++;
-
-            AE.profile.zones.push({...AE.cursor});
-            if (AE.profile.zones.length > 20) AE.profile.zones.shift();
-
-            if (Math.random() < 0.7) {
-                AE.pending = {...AE.cursor};
-                AE.rewardTimer = 1000 + Math.random()*2000;
-            }
-        });
-
-        function AE_trigger() {
-            let r = Math.random();
-
-            if (r < 0.2 && creatures.length) {
-                AE.chosen = creatures[Math.floor(Math.random()*creatures.length)];
-            }
-
-            if (r < 0.4) {
-                AE.ripple = {
-                    x: cameraX + (Math.random()-0.5)*200,
-                    y: cameraY + (Math.random()-0.5)*200,
-                    radius:0,max:200
-                };
-            }
-
-            if (r < 0.55 && creatures.length>10) {
-                let c1 = creatures[Math.floor(Math.random()*creatures.length)];
-                let c2 = creatures[Math.floor(Math.random()*creatures.length)];
-                AE.nearMiss = {c1,c2};
-            }
-
-            if (r < 0.7 && creatures.length>20) {
-                AE.sync = [];
-                for(let i=0;i<10;i++){
-                    AE.sync.push(creatures[Math.floor(Math.random()*creatures.length)]);
-                }
-            }
-
-            if (Math.random()<0.15){
-                let t = ["Đã từng xảy ra...","Không phải lần đầu","Bạn vừa bỏ lỡ gì đó"];
-                AE.memory = t[Math.floor(Math.random()*t.length)];
-                AE.memoryTimer = 2000;
-            }
-
-            if (Math.random()<0.2 && creatures.length){
-                let c = creatures[Math.floor(Math.random()*creatures.length)];
-                AE.pattern = {x:c.x,y:c.y};
-                AE.patternTimer = 300;
-            }
-        }
-
-        const AE_oldAnimate = animate;
-        animate = function(time){
-
-            AE_oldAnimate(time);
-
-            if (time - AE.lastEvent > AE.delay){
-                AE_trigger();
-                AE.lastEvent = time;
-                AE.delay = 5000 + Math.random()*10000;
-            }
-
-            if (Math.random()<0.15 && creatures.length){
-                let c = creatures[Math.floor(Math.random()*creatures.length)];
-                AE.ghost.push({x:c.x,y:c.y,life:1});
-            }
-            AE.ghost.forEach(g=>g.life-=0.04);
-            AE.ghost = AE.ghost.filter(g=>g.life>0);
-
-            if (AE.pending){
-                AE.rewardTimer -=16;
-                if (AE.rewardTimer<=0){
-                    AE.ripple = {
-                        x: AE.pending.x*TILE_SIZE,
-                        y: AE.pending.y*TILE_SIZE,
-                        radius:0,max:150
-                    };
-                    AE.pending=null;
-                }
-            }
-
-            if (Math.random()<0.05 && AE.profile.zones.length>5){
-                let z = AE.profile.zones[Math.floor(Math.random()*AE.profile.zones.length)];
-                AE.predicted = z;
-                AE.predictTimer = 800;
-            }
-
-            if (AE.predictTimer>0){
-                AE.predictTimer-=16;
-                if (AE.predictTimer<=0 && AE.predicted){
-                    AE.ripple = {
-                        x: AE.predicted.x*TILE_SIZE,
-                        y: AE.predicted.y*TILE_SIZE,
-                        radius:0,max:120
-                    };
-                    AE.predicted=null;
-                }
-            }
-
-            if (AE.memoryTimer>0){
-                AE.memoryTimer-=16;
-                if (AE.memoryTimer<=0) AE.memory=null;
-            }
-
-            if (AE.patternTimer>0){
-                AE.patternTimer-=16;
-                if (AE.patternTimer<=0) AE.pattern=null;
-            }
-
-            ctx.save();
-
-            if (AE.ripple){
-                AE.ripple.radius+=4;
-                ctx.beginPath();
-                ctx.arc(AE.ripple.x,AE.ripple.y,AE.ripple.radius,0,Math.PI*2);
-                ctx.strokeStyle="rgba(255,255,255,0.2)";
-                ctx.stroke();
-                if (AE.ripple.radius>AE.ripple.max) AE.ripple=null;
-            }
-
-            if (AE.nearMiss){
-                ctx.strokeStyle="rgba(255,100,100,0.4)";
-                ctx.beginPath();
-                ctx.moveTo(AE.nearMiss.c1.x*TILE_SIZE,AE.nearMiss.c1.y*TILE_SIZE);
-                ctx.lineTo(AE.nearMiss.c2.x*TILE_SIZE,AE.nearMiss.c2.y*TILE_SIZE);
-                ctx.stroke();
-            }
-
-            AE.ghost.forEach(g=>{
-                ctx.globalAlpha=g.life*0.3;
-                ctx.fillStyle="white";
-                ctx.fillRect(g.x*TILE_SIZE,g.y*TILE_SIZE,3,3);
-                ctx.globalAlpha=1;
-            });
-
-            if (AE.pattern){
-                ctx.strokeStyle="rgba(255,255,255,0.15)";
-                ctx.beginPath();
-                let r=25;
-                for(let i=0;i<6;i++){
-                    let a=i/6*Math.PI*2;
-                    ctx.lineTo(
-                        AE.pattern.x*TILE_SIZE+Math.cos(a)*r,
-                        AE.pattern.y*TILE_SIZE+Math.sin(a)*r
-                    );
+        return {
+            name: cat.name,
+            points: normalizedPoints,
+            draw: function(ctx, cx, cy, size) {
+                ctx.moveTo(cx + this.points[0].x * size, cy + this.points[0].y * size);
+                for(let i = 1; i < this.points.length; i++) {
+                    ctx.lineTo(cx + this.points[i].x * size, cy + this.points[i].y * size);
                 }
                 ctx.closePath();
-                ctx.stroke();
             }
-
-            if (AE.memory){
-                ctx.fillStyle="rgba(255,255,255,0.8)";
-                ctx.font="14px sans-serif";
-                ctx.textAlign="center";
-                ctx.fillText(AE.memory,canvas.width/2,60);
-            }
-
-            ctx.restore();
         };
+    }
+};
 
-        const AE_oldDraw = Creature.prototype.draw;
-        Creature.prototype.draw = function(ctx,progress, bounds){
+/**
+ * --- GAME DATA & CONFIG ---
+ */
+const MODES = {
+    'straight': { id: 'straight', name: 'CẮT THẲNG', icon: '📏', color: '#38bdf8' },
+    'angle': { id: 'angle', name: 'CẮT GÓC', icon: '📐', color: '#f43f5e' },
+    'free': { id: 'free', name: 'VẼ TỰ DO', icon: '🖍️', color: '#a855f7' }
+};
 
-            if (this === AE.chosen){
-                ctx.save();
-                ctx.shadowBlur=20;
-                ctx.shadowColor="white";
-                AE_oldDraw.call(this,ctx,progress, bounds);
-                ctx.restore();
-                return;
+/**
+ * --- MATH & GEOMETRY UTILS ---
+ */
+const MathUtils = {
+    getCentroid: function(vertices) {
+        let x = 0, y = 0, area = 0;
+        for (let i = 0; i < vertices.length; i++) {
+            let j = (i + 1) % vertices.length;
+            let factor = (vertices[i].x * vertices[j].y - vertices[j].x * vertices[i].y);
+            area += factor; x += (vertices[i].x + vertices[j].x) * factor; y += (vertices[i].y + vertices[j].y) * factor;
+        }
+        area /= 2; x /= 6 * area; y /= 6 * area;
+        return { x, y };
+    },
+    getBoundingBox: function(vertices) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        vertices.forEach(p => {
+            if (p.x < minX) minX = p.x; if (p.y < minY) minY = p.y;
+            if (p.x > maxX) maxX = p.x; if (p.y > maxY) maxY = p.y;
+        });
+        return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
+    },
+    dist: function(p1, p2) {
+        return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    },
+    lineIntersect: function(p1, p2, p3, p4) {
+        const den = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+        if (den === 0) return null;
+        const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den;
+        const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / den;
+        // Bổ sung epsilon (0.001) để xử lý việc đường cắt đi qua trùng khít với các góc (đỉnh) của hình
+        if (t >= -0.001 && t <= 1.001 && u >= -0.001 && u <= 1.001) {
+            return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+        }
+        return null;
+    }
+};
+
+/**
+ * --- CORE: PIXEL MATCHING SYSTEM (IoU) ---
+ */
+function calculateIoU(polyVertices, targetObj) {
+    const mCanvas = document.getElementById('match-canvas');
+    const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+    mCtx.clearRect(0, 0, 100, 100);
+
+    const bbox = MathUtils.getBoundingBox(polyVertices);
+    if (bbox.w < 1 || bbox.h < 1) return 0; // Tránh lỗi cắt ra mảnh siêu hẹp hoặc 1D
+
+    const scale = Math.min(80 / bbox.w, 80 / bbox.h);
+    const cx = bbox.minX + bbox.w / 2;
+    const cy = bbox.minY + bbox.h / 2;
+
+    // Draw Player shape
+    mCtx.fillStyle = '#0000FF'; mCtx.beginPath();
+    polyVertices.forEach((p, i) => {
+        const nx = 50 + (p.x - cx) * scale; const ny = 50 + (p.y - cy) * scale;
+        if (i === 0) mCtx.moveTo(nx, ny); else mCtx.lineTo(nx, ny);
+    });
+    mCtx.closePath(); mCtx.fill();
+
+    // Draw Target Shape
+    mCtx.globalCompositeOperation = 'screen'; mCtx.fillStyle = '#FF0000'; mCtx.beginPath();
+    targetObj.draw(mCtx, 50, 50, 35); mCtx.fill(); mCtx.globalCompositeOperation = 'source-over';
+
+    const imageData = mCtx.getImageData(0, 0, 100, 100).data;
+    let intersection = 0; let union = 0;
+
+    for (let i = 0; i < imageData.length; i += 4) {
+        const r = imageData[i]; const b = imageData[i + 2];
+        if (r > 128 && b > 128) intersection++;
+        if (r > 128 || b > 128) union++;
+    }
+
+    if (union === 0) return 0;
+    return (intersection / union) * 100;
+}
+
+// Background Particles
+class Particle {
+    constructor(w, h) {
+        this.x = Math.random() * w; this.y = Math.random() * h;
+        this.size = Math.random() * 4 + 2;
+        this.speedY = Math.random() * 1 - 0.5;
+        this.speedX = Math.random() * 1 - 0.5;
+        this.opacity = Math.random() * 0.4 + 0.1;
+        this.type = Math.floor(Math.random() * 3); // 0: Circle, 1: Square, 2: Triangle
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotSpeed = (Math.random() - 0.5) * 0.05;
+    }
+    update(w, h) {
+        this.x += this.speedX; this.y += this.speedY;
+        this.rotation += this.rotSpeed;
+        if(this.y < -20) this.y = h + 20; if(this.y > h + 20) this.y = -20;
+        if(this.x < -20) this.x = w + 20; if(this.x > w + 20) this.x = -20;
+    }
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.opacity; ctx.fillStyle = '#38bdf8';
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.beginPath(); 
+        
+        if (this.type === 0) {
+            ctx.arc(0, 0, this.size, 0, Math.PI*2);
+        } else if (this.type === 1) {
+            ctx.rect(-this.size, -this.size, this.size*2, this.size*2);
+        } else {
+            ctx.moveTo(0, -this.size);
+            ctx.lineTo(this.size, this.size);
+            ctx.lineTo(-this.size, this.size);
+        }
+        
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+/**
+ * --- GAME CLASSES ---
+ */
+class PolygonArea {
+    constructor(vertices) {
+        this.vertices = vertices;
+        this.centroid = MathUtils.getCentroid(vertices);
+        this.color = '#1e293b'; this.borderColor = '#475569'; this.glow = null;
+        this.vx = (Math.random() - 0.5) * 8; this.vy = 0; this.gravity = 0;
+        this.rotation = 0; this.angularVelocity = (Math.random() - 0.5) * 0.15;
+    }
+
+    applyFeedback(percent) {
+        if (percent >= 90) { this.color = '#10b981'; this.borderColor = '#34d399'; this.glow = '#10b981'; this.vy = -10; } 
+        else if (percent >= 75) { this.color = '#0ea5e9'; this.borderColor = '#38bdf8'; this.glow = '#0ea5e9'; this.vy = -7; } 
+        else if (percent >= 60) { this.color = '#f59e0b'; this.borderColor = '#fbbf24'; this.vy = -4; } 
+        else { this.color = '#ef4444'; this.borderColor = '#fca5a5'; this.glow = '#ef4444'; this.vy = 0; }
+        this.gravity = 0.8;
+    }
+
+    setMiss() { this.color = 'rgba(15,23,42,0.5)'; this.borderColor = '#334155'; this.vy = 2; this.gravity = 1; }
+
+    update() {
+        if (this.gravity > 0) {
+            this.vy += this.gravity; this.centroid.x += this.vx; this.centroid.y += this.vy;
+            this.rotation += this.angularVelocity;
+            this.vertices = this.vertices.map(p => ({ x: p.x + this.vx, y: p.y + this.vy }));
+        }
+    }
+
+    draw(ctx) {
+        if (this.vertices.length < 3) return;
+        ctx.save();
+        ctx.translate(this.centroid.x, this.centroid.y);
+        ctx.rotate(this.rotation);
+        ctx.translate(-this.centroid.x, -this.centroid.y);
+
+        ctx.beginPath(); ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
+        for (let i = 1; i < this.vertices.length; i++) ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
+        ctx.closePath();
+        
+        ctx.fillStyle = this.color;
+        if (this.glow) { ctx.shadowBlur = 25; ctx.shadowColor = this.glow; }
+        ctx.fill(); ctx.shadowBlur = 0;
+
+        ctx.lineWidth = 3; ctx.strokeStyle = this.borderColor; ctx.stroke();
+        ctx.restore();
+    }
+}
+
+class FloatingText {
+    constructor(x, y, text, percent) {
+        this.x = x; this.y = y; this.text = text;
+        this.opacity = 1; this.life = 50;
+        if (percent >= 90) { this.color = '#34d399'; this.size = 36; }
+        else if (percent >= 75) { this.color = '#38bdf8'; this.size = 28; }
+        else if (percent >= 60) { this.color = '#fbbf24'; this.size = 24; }
+        else { this.color = '#ef4444'; this.size = 40; }
+    }
+    update() { this.y -= 2; this.opacity -= 1/this.life; return this.opacity > 0; }
+    draw(ctx) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity);
+        ctx.fillStyle = this.color; ctx.font = `black ${this.size}px 'Montserrat'`;
+        ctx.textAlign = 'center'; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+        ctx.fillText(this.text, this.x, this.y); ctx.restore();
+    }
+}
+
+/**
+ * --- GAME STATE ---
+ */
+let gameState = 'MENU'; // MENU, PLAYING, GAMEOVER
+const canvasWrapper = document.getElementById('canvas-wrapper');
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const tCtx = document.getElementById('target-canvas').getContext('2d');
+
+let width, height;
+let polygons = []; let floatingTexts = []; let particles = [];
+let isDragging = false;
+let score = 0; let combo = 0;
+let isAnimatingResult = false; let shakeAmount = 0;
+
+let currentTarget = null;
+let activeModes = []; let selectedMode = '';
+let strokePoints = [];
+const MAX_FREE_DRAW_LENGTH = 500;
+let currentStrokeLength = 0;
+
+function resizeCanvas() {
+    width = canvasWrapper.clientWidth; height = canvasWrapper.clientHeight;
+    canvas.width = width; canvas.height = height;
+    if(particles.length === 0) {
+        for(let i=0; i<30; i++) particles.push(new Particle(width, height));
+    }
+}
+window.addEventListener('resize', resizeCanvas);
+function triggerShake(intensity) { shakeAmount = intensity; }
+
+/**
+ * --- UI LOGIC ---
+ */
+function showMenu() {
+    gameState = 'MENU';
+    document.getElementById('main-menu').classList.remove('hidden-screen');
+    document.getElementById('game-ui').classList.add('hidden-screen');
+    document.getElementById('game-over').classList.add('hidden-screen');
+}
+
+function drawTargetUI() {
+    tCtx.clearRect(0, 0, 80, 80);
+    tCtx.beginPath(); currentTarget.draw(tCtx, 40, 40, 25);
+    tCtx.fillStyle = '#38bdf8'; tCtx.shadowBlur = 15; tCtx.shadowColor = '#38bdf8';
+    tCtx.fill(); tCtx.shadowBlur = 0;
+    
+    document.getElementById('target-name').innerText = currentTarget.name;
+    const box = document.getElementById('target-container');
+    box.style.transform = 'scale(1.1)'; box.style.borderColor = '#38bdf8';
+    setTimeout(() => { box.style.transform = 'scale(1)'; box.style.borderColor = 'rgba(56, 189, 248, 0.2)'; }, 200);
+}
+
+function updateUI() {
+    document.getElementById('score-display').innerText = score;
+    const comboEl = document.getElementById('combo-display');
+    if (combo > 1) { comboEl.style.opacity = 1; document.getElementById('combo-val').innerText = combo; } 
+    else { comboEl.style.opacity = 0; }
+}
+
+window.selectMode = function(index) {
+    if (isAnimatingResult || gameState !== 'PLAYING') return;
+    selectedMode = activeModes[index];
+    document.getElementById('btn-mode-0').classList.toggle('active', index === 0);
+    document.getElementById('btn-mode-1').classList.toggle('active', index === 1);
+    
+    document.getElementById('ink-container').style.opacity = selectedMode === 'free' ? 1 : 0;
+    currentStrokeLength = 0; document.getElementById('ink-bar').style.width = '100%';
+};
+
+/**
+ * --- GAME LOOP CONTROLLER ---
+ */
+function startGame() {
+    gameState = 'PLAYING';
+    document.getElementById('main-menu').classList.add('hidden-screen');
+    document.getElementById('game-over').classList.add('hidden-screen');
+    document.getElementById('game-ui').classList.remove('hidden-screen');
+    
+    resizeCanvas();
+    score = 0; combo = 0; isAnimatingResult = false;
+    updateUI(); startNextLevel();
+}
+
+function startNextLevel() {
+    isAnimatingResult = false; polygons = []; floatingTexts = []; strokePoints = []; currentStrokeLength = 0;
+
+    // Generate Dynamic Target
+    currentTarget = ShapeGenerator.getRandomTarget();
+    drawTargetUI();
+
+    const allModes = Object.keys(MODES);
+    allModes.sort(() => 0.5 - Math.random());
+    activeModes = allModes.slice(0, 2);
+    
+    for(let i=0; i<2; i++) {
+        const btn = document.getElementById(`btn-mode-${i}`);
+        const md = MODES[activeModes[i]];
+        btn.innerHTML = `<span class="icon">${md.icon}</span><span>${md.name}</span>`;
+    }
+    selectMode(0);
+
+    const padding = 20;
+    const size = Math.min(width, height) - padding * 2;
+    const x = (width - size) / 2; const y = (height - size) / 2;
+    
+    polygons.push(new PolygonArea([
+        {x: x, y: y}, {x: x+size, y: y}, {x: x+size, y: y+size}, {x: x, y: y+size}
+    ]));
+}
+
+/**
+ * --- CUTTING ALGORITHM ---
+ */
+function cutPolygonWithPolyline(poly, linePoints) {
+    if (linePoints.length < 2) return [poly];
+    let intersections = []; const pVerts = poly.vertices;
+    for (let i = 0; i < pVerts.length; i++) {
+        const edgeStart = pVerts[i]; const edgeEnd = pVerts[(i + 1) % pVerts.length];
+        for (let j = 0; j < linePoints.length - 1; j++) {
+            const intPt = MathUtils.lineIntersect(edgeStart, edgeEnd, linePoints[j], linePoints[j+1]);
+            if (intPt) intersections.push({ pt: intPt, edgeIdx: i, lineIdx: j });
+        }
+    }
+
+    if (intersections.length < 2) return [poly];
+    
+    // Khắc phục lỗi sắp xếp khi mảng giao điểm có trên cùng 1 đoạn cắt bằng khoảng cách thực
+    intersections.sort((a, b) => {
+        if (a.lineIdx !== b.lineIdx) return a.lineIdx - b.lineIdx;
+        const distA = MathUtils.dist(linePoints[a.lineIdx], a.pt);
+        const distB = MathUtils.dist(linePoints[b.lineIdx], b.pt);
+        return distA - distB;
+    });
+    
+    const entry = intersections[0]; const exit = intersections[intersections.length - 1];
+
+    let piece1 = []; piece1.push(entry.pt);
+    for (let i = entry.lineIdx + 1; i <= exit.lineIdx; i++) piece1.push(linePoints[i]);
+    piece1.push(exit.pt);
+    let currIdx = (exit.edgeIdx + 1) % pVerts.length;
+    while (currIdx !== (entry.edgeIdx + 1) % pVerts.length) {
+        piece1.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length;
+    }
+    
+    let piece2 = []; piece2.push(exit.pt);
+    for (let i = exit.lineIdx; i > entry.lineIdx; i--) piece2.push(linePoints[i]);
+    piece2.push(entry.pt);
+    currIdx = (entry.edgeIdx + 1) % pVerts.length;
+    while (currIdx !== (exit.edgeIdx + 1) % pVerts.length) {
+        piece2.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length;
+    }
+
+    return [new PolygonArea(piece1), new PolygonArea(piece2)];
+}
+
+function resolveCut() {
+    if (strokePoints.length < 2) return;
+    
+    let finalPath = [];
+    if (selectedMode === 'straight') {
+        finalPath = [strokePoints[0], strokePoints[strokePoints.length - 1]];
+    } else if (selectedMode === 'angle') {
+        const start = strokePoints[0]; const end = strokePoints[strokePoints.length - 1];
+        let maxDist = -1; let cornerPoint = start;
+        const denom = MathUtils.dist(start, end);
+        if (denom > 0) {
+            for (let i = 1; i < strokePoints.length - 1; i++) {
+                const p = strokePoints[i];
+                const d = Math.abs((end.x - start.x)*(start.y - p.y) - (start.x - p.x)*(end.y - start.y)) / denom;
+                if (d > maxDist) { maxDist = d; cornerPoint = p; }
+            }
+        }
+        finalPath.push(start);
+        if (maxDist > 10) finalPath.push(cornerPoint);
+        finalPath.push(end);
+    } else if (selectedMode === 'free') {
+        finalPath = [...strokePoints];
+    }
+
+    if (finalPath.length >= 2) {
+        // Tối ưu quá trình kéo dài đường cắt (Tránh jitter loạn vector do cảm ứng)
+        const p0 = finalPath[0];
+        let p1Idx = 1;
+        while (p1Idx < finalPath.length - 1 && MathUtils.dist(p0, finalPath[p1Idx]) < 20) p1Idx++;
+        const p1 = finalPath[p1Idx];
+
+        const pl1 = finalPath[finalPath.length-1];
+        let pl2Idx = finalPath.length - 2;
+        while (pl2Idx > 0 && MathUtils.dist(pl1, finalPath[pl2Idx]) < 20) pl2Idx--;
+        const pl2 = finalPath[pl2Idx];
+        
+        const dStart = MathUtils.dist(p0, p1);
+        if (dStart > 0) finalPath[0] = { x: p0.x - ((p1.x - p0.x) / dStart) * 1000, y: p0.y - ((p1.y - p0.y) / dStart) * 1000 };
+        const dEnd = MathUtils.dist(pl2, pl1);
+        if (dEnd > 0) finalPath[finalPath.length-1] = { x: pl1.x + ((pl1.x - pl2.x) / dEnd) * 1000, y: pl1.y + ((pl1.y - pl2.y) / dEnd) * 1000 };
+    }
+
+    let newPieces = []; let cutHappened = false;
+    polygons.forEach(poly => {
+        const result = cutPolygonWithPolyline(poly, finalPath);
+        if (result.length > 1) cutHappened = true;
+        newPieces.push(...result);
+    });
+
+    if (!cutHappened) { strokePoints = []; return; }
+
+    polygons = newPieces; isAnimatingResult = true;
+    let bestPiece = null; let bestMatchScore = 0;
+
+    polygons.forEach(poly => {
+        const matchScore = calculateIoU(poly.vertices, currentTarget);
+        if (matchScore > bestMatchScore) { bestMatchScore = matchScore; bestPiece = poly; }
+    });
+
+    const percent = Math.min(100, Math.round(bestMatchScore));
+    polygons.forEach(p => { if (p === bestPiece) p.applyFeedback(percent); else p.setMiss(); });
+
+    let text = ""; let pts = 0;
+    if (percent >= 90) {
+        combo++; pts = 100 * combo; text = `PERFECT! ${percent}%`; triggerShake(3);
+        if(selectedMode === 'free') { pts += 50; text = `FREE MASTER! +150`; }
+    } else if (percent >= 75) {
+        combo = 1; pts = 60; text = `GOOD ${percent}%`;
+    } else if (percent >= 60) {
+        combo = 1; pts = 30; text = `ALMOST ${percent}%`;
+    } else {
+        combo = 0; text = `FAIL ${percent}%`; triggerShake(10);
+    }
+
+    score += pts; updateUI();
+
+    if (bestPiece) floatingTexts.push(new FloatingText(bestPiece.centroid.x, bestPiece.centroid.y, text, percent));
+    else floatingTexts.push(new FloatingText(width/2, height/2, text, percent));
+
+    setTimeout(() => {
+        if (percent < 60) {
+            gameState = 'GAMEOVER';
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('fail-match-rate').innerText = `Độ khớp: ${percent}%`;
+            document.getElementById('game-over').classList.remove('hidden-screen');
+        } else {
+            startNextLevel();
+        }
+    }, 1500);
+}
+
+/**
+ * --- INPUT HANDLING ---
+ */
+function getMousePos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    if (isAnimatingResult || gameState !== 'PLAYING') return;
+    isDragging = true; strokePoints = [getMousePos(e)]; currentStrokeLength = 0;
+});
+canvas.addEventListener('touchstart', (e) => {
+    if (e.target === canvas) e.preventDefault();
+    if (isAnimatingResult || gameState !== 'PLAYING') return;
+    isDragging = true; strokePoints = [getMousePos(e)]; currentStrokeLength = 0;
+}, {passive: false});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const pos = getMousePos(e);
+    const lastPoint = strokePoints[strokePoints.length - 1];
+    const dist = MathUtils.dist(lastPoint, pos);
+    
+    if (selectedMode === 'free') {
+        currentStrokeLength += dist;
+        const inkPercent = Math.max(0, 100 - (currentStrokeLength / MAX_FREE_DRAW_LENGTH) * 100);
+        document.getElementById('ink-bar').style.width = `${inkPercent}%`;
+        if (currentStrokeLength > MAX_FREE_DRAW_LENGTH) { handleEnd(); return; }
+        if (dist > 5) strokePoints.push(pos);
+    } else {
+        if (dist > 5) strokePoints.push(pos); 
+    }
+});
+
+window.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const pos = getMousePos(e);
+    const lastPoint = strokePoints[strokePoints.length - 1];
+    const dist = MathUtils.dist(lastPoint, pos);
+    
+    if (selectedMode === 'free') {
+        currentStrokeLength += dist;
+        const inkPercent = Math.max(0, 100 - (currentStrokeLength / MAX_FREE_DRAW_LENGTH) * 100);
+        document.getElementById('ink-bar').style.width = `${inkPercent}%`;
+        if (currentStrokeLength > MAX_FREE_DRAW_LENGTH) { handleEnd(); return; }
+        if (dist > 5) strokePoints.push(pos);
+    } else {
+        if (dist > 5) strokePoints.push(pos); 
+    }
+}, {passive: false});
+
+function handleEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    if (strokePoints.length < 2) return;
+    
+    let totalLength = 0;
+    for (let i = 0; i < strokePoints.length - 1; i++) {
+        totalLength += MathUtils.dist(strokePoints[i], strokePoints[i+1]);
+    }
+    
+    if (totalLength > 30) resolveCut(); else strokePoints = [];
+}
+window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend', handleEnd);
+
+/**
+ * --- RENDER LOOP ---
+ */
+function animate() {
+    // Chỉ clear và vẽ lại nếu đang trong màn hình chơi (tối ưu hiệu suất)
+    if (gameState === 'PLAYING') {
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.save();
+        if (shakeAmount > 0) {
+            ctx.translate((Math.random() - 0.5) * shakeAmount, (Math.random() - 0.5) * shakeAmount);
+            shakeAmount *= 0.8; if (shakeAmount < 0.5) shakeAmount = 0;
+        }
+
+        // Background Particles
+        particles.forEach(p => { p.update(width, height); p.draw(ctx); });
+
+        // Vẽ khối
+        polygons.forEach(poly => { poly.update(); poly.draw(ctx); });
+
+        // Vẽ đường nét cắt (Preview / Drawing)
+        if (isDragging && strokePoints.length > 1) {
+            ctx.beginPath();
+            const start = strokePoints[0]; const end = strokePoints[strokePoints.length - 1];
+            
+            if (selectedMode === 'straight') {
+                ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y);
+            } else if (selectedMode === 'angle') {
+                let maxDist = -1; let cornerPoint = start;
+                const denom = MathUtils.dist(start, end);
+                if (denom > 0) {
+                    for (let i = 1; i < strokePoints.length - 1; i++) {
+                        const p = strokePoints[i];
+                        const d = Math.abs((end.x - start.x)*(start.y - p.y) - (start.x - p.x)*(end.y - start.y)) / denom;
+                        if (d > maxDist) { maxDist = d; cornerPoint = p; }
+                    }
+                }
+                ctx.moveTo(start.x, start.y);
+                if (maxDist > 10) ctx.lineTo(cornerPoint.x, cornerPoint.y);
+                ctx.lineTo(end.x, end.y);
+            } else if (selectedMode === 'free') {
+                ctx.moveTo(strokePoints[0].x, strokePoints[0].y);
+                for (let i = 1; i < strokePoints.length; i++) ctx.lineTo(strokePoints[i].x, strokePoints[i].y);
             }
 
-            if (AE.sync && AE.sync.includes(this)){
-                ctx.save();
-                ctx.shadowBlur=10;
-                ctx.shadowColor="cyan";
-                AE_oldDraw.call(this,ctx,progress, bounds);
-                ctx.restore();
-                return;
-            }
+            const modeColor = MODES[selectedMode].color;
+            ctx.strokeStyle = modeColor; ctx.lineWidth = 4;
+            ctx.shadowBlur = 15; ctx.shadowColor = modeColor;
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.stroke(); ctx.shadowBlur = 0;
+            
+            ctx.beginPath(); ctx.arc(end.x, end.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#fff';
+            ctx.fill(); ctx.shadowBlur = 0;
+        }
 
-            AE_oldDraw.call(this,ctx,progress, bounds);
-        };
-    </script>
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const ft = floatingTexts[i];
+            if (!ft.update()) floatingTexts.splice(i, 1); else ft.draw(ctx);
+        }
+
+        ctx.restore();
+    }
+    requestAnimationFrame(animate);
+}
+
+// Khởi tạo Game
+showMenu();
+animate();
+
+</script>
 </body>
 </html>
