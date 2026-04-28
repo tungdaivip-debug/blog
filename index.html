@@ -3,55 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Cut Shape - Logic Rush</title>
+    <title>Fruit Slice & Weigh</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,900;1,900&display=swap');
+        /* Sử dụng Baloo 2 thay cho Fredoka One để hỗ trợ tiếng Việt có dấu chuẩn xác */
+        @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;700;900&display=swap');
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #020617; 
-            font-family: 'Montserrat', sans-serif;
+            background-color: #fef08a; /* Amber 200 - Nền tươi sáng */
+            background-image: radial-gradient(#fde047 20%, transparent 20%), radial-gradient(#fde047 20%, transparent 20%);
+            background-position: 0 0, 25px 25px;
+            background-size: 50px 50px;
+            font-family: 'Nunito', sans-serif;
             touch-action: none; user-select: none;
             display: flex; justify-content: center; overflow: hidden;
-            color: white;
-        }
-
-        /* Animated Grid Background */
-        .bg-grid {
-            position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-            background-image: 
-                linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-            transform: perspective(500px) rotateX(45deg);
-            animation: gridMove 20s linear infinite;
-            z-index: 0; pointer-events: none;
-        }
-        @keyframes gridMove {
-            0% { transform: perspective(500px) rotateX(45deg) translateY(0); }
-            100% { transform: perspective(500px) rotateX(45deg) translateY(40px); }
+            color: #334155;
         }
 
         #game-container {
             width: 100%; max-width: 500px; height: 100%; display: flex; flex-direction: column;
             position: relative; z-index: 1;
+            background: linear-gradient(180deg, #ffffff00 0%, #fffbeb 100%);
         }
 
         /* Effects */
         #screen-flash { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s; }
         #fever-overlay {
-            position: absolute; inset: 0; background: radial-gradient(circle, rgba(239, 68, 68, 0) 40%, rgba(239, 68, 68, 0.2) 100%);
+            position: absolute; inset: 0; background: radial-gradient(circle, rgba(244, 63, 94, 0) 40%, rgba(244, 63, 94, 0.2) 100%);
             opacity: 0; pointer-events: none; z-index: 5; transition: opacity 0.3s;
             animation: feverPulse 1s infinite alternate;
         }
-        @keyframes feverPulse { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
+        @keyframes feverPulse { 0% { opacity: 0; } 100% { opacity: 0.8; } }
 
         /* Panels */
         .glass-panel {
-            background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.1);
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px);
+            border: 2px solid white;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             border-radius: 20px;
         }
 
@@ -59,91 +48,90 @@
         .hidden-screen { opacity: 0; pointer-events: none; transform: scale(1.05); }
 
         /* Main Menu */
-        #main-menu { align-items: center; justify-content: center; z-index: 100; background: radial-gradient(circle, rgba(15,23,42,0.9) 0%, #020617 100%); }
-        .logo-shape { box-shadow: 0 0 30px rgba(56, 189, 248, 0.6); transition: all 0.3s; }
+        #main-menu { align-items: center; justify-content: center; z-index: 100; background: rgba(254, 240, 138, 0.95); backdrop-filter: blur(5px); }
         .game-title {
-            font-size: 4.5rem; font-weight: 900; line-height: 1; text-align: center;
-            background: linear-gradient(to bottom, #ffffff, #38bdf8);
+            font-family: 'Baloo 2', cursive;
+            font-size: 5rem; line-height: 1; text-align: center; font-weight: 800;
+            background: linear-gradient(to bottom, #f43f5e, #fb923c);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(56,189,248,0.6)); margin-bottom: 10px;
+            filter: drop-shadow(0 4px 0px #e11d48); margin-bottom: 10px;
+            transform: rotate(-5deg);
         }
         .play-btn {
-            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
-            color: white; font-weight: 900; font-size: 1.8rem; letter-spacing: 2px;
-            padding: 15px 60px; border-radius: 50px; border: 2px solid #7dd3fc;
-            box-shadow: 0 0 30px rgba(56,189,248,0.5); cursor: pointer; transition: all 0.2s;
-            animation: pulse 1.5s infinite; margin-top: 50px;
+            font-family: 'Baloo 2', cursive;
+            background: #10b981; color: white; font-size: 2rem; letter-spacing: 1px; font-weight: 800;
+            padding: 10px 60px; border-radius: 50px; border: 4px solid white;
+            box-shadow: 0 10px 0 #059669, 0 15px 20px rgba(0,0,0,0.2); 
+            cursor: pointer; transition: all 0.1s; margin-top: 50px;
+            animation: bounceBtn 2s infinite; line-height: 1.5;
         }
-        .play-btn:active { transform: scale(0.9); }
-        @keyframes pulse { 0% { box-shadow: 0 0 20px rgba(56,189,248,0.5); } 50% { box-shadow: 0 0 50px rgba(56,189,248,0.9), 0 0 15px #fff; transform: scale(1.05); } 100% { box-shadow: 0 0 20px rgba(56,189,248,0.5); } }
+        .play-btn:active { transform: translateY(10px); box-shadow: 0 0 0 #059669, 0 5px 10px rgba(0,0,0,0.2); }
+        @keyframes bounceBtn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
         /* Gameplay UI */
-        #timer-container { position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: rgba(0,0,0,0.5); z-index: 20; }
-        #timer-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #10b981, #38bdf8); box-shadow: 0 0 15px #38bdf8; transition: width 0.1s linear; }
+        #timer-container { position: absolute; top: 0; left: 0; width: 100%; height: 10px; background: rgba(0,0,0,0.1); z-index: 20; }
+        #timer-bar { height: 100%; width: 100%; background: #10b981; box-shadow: 0 0 10px #10b981; transition: width 0.1s linear; border-radius: 0 5px 5px 0;}
         .timer-panic { background: #ef4444 !important; box-shadow: 0 0 20px #ef4444 !important; animation: shakeBar 0.2s infinite; }
         @keyframes shakeBar { 0% {transform: translateY(0);} 50% {transform: translateY(2px);} 100% {transform: translateY(0);} }
 
         #canvas-wrapper {
             flex-grow: 1; position: relative; margin: 0 20px; border-radius: 20px;
-            border: 2px solid rgba(56, 189, 248, 0.3);
-            background: radial-gradient(circle, rgba(30,41,59,0.3) 0%, rgba(2,6,23,0.8) 100%);
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.9); overflow: hidden; margin-top: 15px; z-index: 10;
+            border: 4px solid white;
+            background: #e0f2fe; /* Light sky blue chopping board area */
+            box-shadow: inset 0 10px 30px rgba(0,0,0,0.05), 0 10px 20px rgba(0,0,0,0.1); 
+            overflow: hidden; margin-top: 15px; z-index: 10;
         }
         canvas#gameCanvas { display: block; width: 100%; height: 100%; touch-action: none; }
         
-        #header-area { padding: 20px 20px 5px 20px; display: flex; justify-content: space-between; align-items: start; gap: 15px; z-index: 10; position: relative;}
+        #header-area { padding: 25px 20px 5px 20px; display: flex; justify-content: space-between; align-items: start; gap: 15px; z-index: 10; position: relative;}
         #footer-area { padding: 10px 20px 20px 20px; display: flex; flex-direction: column; gap: 15px; z-index: 10; }
 
-        #target-container { padding: 10px; display: flex; flex-direction: column; align-items: center; min-width: 100px; }
-        #target-canvas { width: 70px; height: 70px; background: rgba(0,0,0,0.4); border-radius: 12px; margin-top: 5px; border: 1px solid rgba(56, 189, 248, 0.4); }
+        #target-container { 
+            padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-width: 120px; background: #fff; border: 3px solid #f43f5e; border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(244, 63, 94, 0.2);
+        }
 
         #mode-selector { display: flex; gap: 10px; justify-content: center; width: 100%; }
         .mode-btn {
-            background: rgba(30, 41, 59, 0.8); border: 2px solid #475569; color: #94a3b8;
-            padding: 10px; border-radius: 16px; font-weight: 800; font-size: 13px;
+            background: white; border: 3px solid #cbd5e1; color: #64748b;
+            padding: 10px; border-radius: 16px; font-weight: 900; font-size: 14px;
             display: flex; flex-direction: column; align-items: center; gap: 2px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); flex: 1;
+            box-shadow: 0 5px 0 #cbd5e1;
         }
-        .mode-btn span.icon { font-size: 20px; }
+        .mode-btn span.icon { font-size: 22px; }
         .mode-btn.active {
-            background: rgba(56, 189, 248, 0.2); border-color: #38bdf8; color: #e0f2fe;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.2); transform: translateY(-3px) scale(1.02);
+            background: #eff6ff; border-color: #38bdf8; color: #0284c7;
+            box-shadow: 0 0 0 #38bdf8; transform: translateY(5px);
         }
 
-        .text-glow { text-shadow: 0 0 15px currentColor; }
+        .text-glow { text-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         #combo-display { transition: transform 0.2s; }
-        #combo-display.active { transform: scale(1.2); opacity: 1; }
-        
-        #match-canvas { display: none; }
+        #combo-display.active { transform: scale(1.2) rotate(5deg); opacity: 1; }
         
         /* Game Over */
-        #game-over { align-items: center; justify-content: center; background: rgba(2,6,23,0.95); z-index: 200; backdrop-filter: blur(15px); }
+        #game-over { align-items: center; justify-content: center; background: rgba(255,255,255,0.95); z-index: 200; backdrop-filter: blur(10px); }
 
-        /* Analyzing Overlay UI */
+        /* Analyzing Overlay UI (Cân điện tử) */
         #analysis-overlay {
-            position: absolute; inset: 0; background: rgba(2,6,23,0.85); z-index: 30;
+            position: absolute; inset: 0; background: rgba(255,255,255,0.85); z-index: 30;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.2s;
         }
         #analysis-overlay.active { opacity: 1; }
-        .laser-scan {
-            position: absolute; width: 250px; height: 3px; background: #38bdf8;
-            box-shadow: 0 0 20px 5px rgba(56, 189, 248, 0.8);
-            top: 0; transform: translateY(-50px);
-        }
-        #analysis-overlay.active .laser-scan { animation: scanAnim 1s ease-in-out forwards; }
-        @keyframes scanAnim { 0% { top: 20%; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 80%; opacity: 0; } }
 
+        .scale-plate {
+            width: 200px; height: 30px; background: #cbd5e1; border-radius: 50%;
+            margin-top: 150px; border: 3px solid #94a3b8; box-shadow: 0 10px 10px rgba(0,0,0,0.1);
+        }
+        
         #scan-percent {
-            font-size: 5rem; font-weight: 900; margin-top: 180px;
-            background: linear-gradient(to bottom, #fff, #94a3b8);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+            font-family: 'Baloo 2', cursive; font-size: 5rem; margin-top: 20px;
+            color: #334155; line-height: 1; font-weight: 800;
         }
-
-        /* Thêm hiệu ứng nhấp nháy cho text báo lỗi */
-        .blink-text { animation: blink 0.5s infinite alternate; }
-        @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
+        .target-compare { font-size: 1.2rem; font-weight: bold; color: #64748b; margin-top: 0px; }
+        .font-baloo { font-family: 'Baloo 2', cursive; font-weight: 800;}
     </style>
 </head>
 <body>
@@ -156,14 +144,12 @@
 
         <!-- MAIN MENU -->
         <div id="main-menu" class="screen">
-            <div class="mb-10 relative w-32 h-32 flex items-center justify-center">
-                <div class="absolute inset-0 bg-sky-500/20 rounded-3xl transform rotate-12 animate-pulse border border-sky-400/50"></div>
-                <div class="absolute inset-0 border-[5px] border-sky-400 rounded-3xl transform -rotate-6 logo-shape"></div>
-                <div class="w-0 h-0 border-l-[25px] border-l-transparent border-b-[45px] border-b-white border-r-[25px] border-r-transparent transform rotate-12 drop-shadow-[0_0_20px_rgba(255,255,255,0.9)]"></div>
+            <div class="mb-5 relative text-8xl" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2)); animation: bounceBtn 3s infinite;">
+                🍕
             </div>
-            <h1 class="game-title">CUT<br>SHAPE</h1>
-            <p class="text-sky-300 tracking-[0.5em] font-black text-sm mt-3 opacity-90">LOGIC RUSH</p>
-            <button class="play-btn" onclick="startGame()">PLAY</button>
+            <h1 class="game-title">FOOD<br>SCALE</h1>
+            <p class="text-rose-500 tracking-[0.2em] font-black text-lg mt-2">CẮT & CÂN TỶ LỆ</p>
+            <button class="play-btn" onclick="startGame()">BẮT ĐẦU</button>
         </div>
 
         <!-- GAMEPLAY UI -->
@@ -171,28 +157,28 @@
             <div id="timer-container"><div id="timer-bar"></div></div>
 
             <div id="header-area">
-                <div id="target-container" class="glass-panel">
-                    <p class="text-sky-300 text-[9px] uppercase tracking-[0.2em] font-black">MỤC TIÊU</p>
-                    <h2 id="target-name" class="text-white text-xs font-bold mt-1 text-center w-[80px] leading-tight text-glow">TAM GIÁC</h2>
-                    <canvas id="target-canvas" width="80" height="80"></canvas>
+                <div id="target-container">
+                    <p class="text-rose-500 text-[10px] uppercase tracking-[0.1em] font-black mb-1">MỤC TIÊU CẮT</p>
+                    <h2 id="target-name" class="text-slate-800 text-4xl font-baloo leading-none">50%</h2>
                 </div>
-                <div class="text-right glass-panel px-6 py-3 flex-grow ml-3 flex flex-col justify-center">
-                    <p class="text-slate-400 text-[10px] uppercase tracking-widest mb-1 font-bold">ĐIỂM SỐ</p>
-                    <p id="score-display" class="text-white text-4xl font-black text-glow leading-none">0</p>
-                    <div id="combo-display" class="mt-1 text-xs font-bold opacity-0 text-amber-400 text-glow">
+                <div class="text-right glass-panel px-6 py-2 flex-grow ml-3 flex flex-col justify-center border-2 border-slate-200">
+                    <p class="text-slate-400 text-[10px] uppercase tracking-widest mb-1 font-black">ĐIỂM SỐ</p>
+                    <p id="score-display" class="text-slate-800 text-4xl font-baloo leading-none">0</p>
+                    <div id="combo-display" class="mt-1 text-xs font-bold opacity-0 text-orange-500">
                         COMBO x<span id="combo-val" class="text-lg">1</span> 🔥
                     </div>
                 </div>
             </div>
 
-            <!-- Vùng Render Game (Bao gồm Overlay Quét) -->
+            <!-- Vùng Render Game -->
             <div id="canvas-wrapper">
                 <canvas id="gameCanvas"></canvas>
                 
                 <div id="analysis-overlay">
-                    <div class="laser-scan"></div>
+                    <div class="scale-plate"></div>
                     <div id="scan-percent">0%</div>
-                    <p id="scan-status" class="text-xl font-bold tracking-widest mt-2 uppercase"></p>
+                    <div class="target-compare">Yêu cầu: <span id="target-compare-val" class="text-rose-500">50%</span></div>
+                    <p id="scan-status" class="text-3xl tracking-widest mt-2 uppercase font-baloo"></p>
                 </div>
             </div>
 
@@ -206,27 +192,24 @@
 
         <!-- GAME OVER -->
         <div id="game-over" class="screen hidden-screen">
-            <h2 class="text-red-500 text-6xl font-black mb-2 uppercase tracking-widest text-glow text-center" id="go-title">HẾT GIỜ!</h2>
-            <p class="text-slate-300 text-sm mb-8 font-bold" id="go-reason">Bạn đã không đủ nhanh.</p>
+            <h2 class="text-rose-500 text-6xl mb-2 uppercase font-baloo text-center" id="go-title">HẾT GIỜ!</h2>
+            <p class="text-slate-500 text-lg mb-8 font-bold" id="go-reason">Bạn đã không đủ nhanh.</p>
             
             <div class="glass-panel p-8 text-center mb-8 min-w-[280px]">
-                <p class="text-slate-400 text-xs uppercase tracking-widest mb-2 font-bold">TỔNG ĐIỂM</p>
-                <p id="final-score" class="text-amber-400 text-7xl font-black text-glow">0</p>
+                <p class="text-slate-400 text-sm uppercase tracking-widest mb-2 font-black">TỔNG ĐIỂM</p>
+                <p id="final-score" class="text-orange-500 text-7xl font-baloo">0</p>
             </div>
             
             <div class="flex gap-4">
-                <button onclick="showMenu()" class="px-6 py-4 bg-slate-700 text-white rounded-full font-bold hover:bg-slate-600 transition-all shadow-lg" onclick="AudioSys.playClick()">MENU</button>
-                <button onclick="startGame()" class="px-10 py-4 bg-sky-500 text-white rounded-full font-black text-xl tracking-wider hover:bg-sky-400 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(56,189,248,0.5)]">CHƠI LẠI</button>
+                <button onclick="showMenu()" class="px-6 py-4 bg-slate-200 text-slate-600 border-b-4 border-slate-300 rounded-2xl font-black hover:bg-slate-300 transition-all" onclick="AudioSys.playClick()">MENU</button>
+                <button onclick="startGame()" class="px-10 py-4 bg-emerald-500 text-white border-b-4 border-emerald-700 rounded-2xl font-baloo text-2xl hover:bg-emerald-400 active:translate-y-1 active:border-b-0 transition-all leading-none">CHƠI LẠI</button>
             </div>
         </div>
     </div>
-    
-    <canvas id="match-canvas" width="100" height="100"></canvas>
 
 <script>
 /**
- * --- HỆ THỐNG ÂM THANH (WEB AUDIO API SYNTHESIZER) ---
- * Tạo âm thanh 8-bit arcade trực tiếp không cần file ngoài
+ * --- HỆ THỐNG ÂM THANH ---
  */
 const AudioSys = {
     ctx: null,
@@ -239,79 +222,99 @@ const AudioSys = {
     },
     playTone(freq, type, duration, vol=0.1, sweep=0) {
         if (!this.ctx) return;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+        osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
         if (sweep) osc.frequency.exponentialRampToValueAtTime(freq * sweep, this.ctx.currentTime + duration);
         gain.gain.setValueAtTime(vol, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start();
-        osc.stop(this.ctx.currentTime + duration);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + duration);
     },
     playClick() { this.playTone(600, 'sine', 0.1, 0.1); },
-    playSlash() { this.playTone(800, 'triangle', 0.15, 0.15, 0.2); },
-    playImpact() { this.playTone(100, 'square', 0.2, 0.2, 0.1); }, // Âm trầm đục khi cắt trúng
-    playScan() { this.playTone(1200, 'sawtooth', 0.05, 0.02); }, // Tít tít nhẹ
+    playSlash() { this.playTone(900, 'sawtooth', 0.1, 0.1, 0.1); }, 
+    playImpact() { this.playTone(150, 'square', 0.15, 0.2, 0.5); }, 
+    playTick() { this.playTone(1200, 'sine', 0.02, 0.05); }, 
     playPerfect() { 
-        this.playTone(400, 'sine', 0.1, 0.1); 
-        setTimeout(() => this.playTone(600, 'sine', 0.1, 0.1), 100); 
-        setTimeout(() => this.playTone(800, 'sine', 0.3, 0.15), 200); 
+        this.playTone(500, 'sine', 0.1, 0.1); 
+        setTimeout(() => this.playTone(650, 'sine', 0.1, 0.1), 100); 
+        setTimeout(() => this.playTone(850, 'sine', 0.3, 0.15), 200); 
     },
-    playGood() { 
-        this.playTone(400, 'square', 0.1, 0.1); 
-        setTimeout(() => this.playTone(600, 'square', 0.2, 0.1), 100); 
-    },
-    playAlmost() { this.playTone(300, 'sawtooth', 0.2, 0.1); },
-    playFail() { this.playTone(150, 'sawtooth', 0.5, 0.2, 0.5); }
+    playGood() { this.playTone(400, 'square', 0.1, 0.1); setTimeout(() => this.playTone(600, 'square', 0.2, 0.1), 100); },
+    playAlmost() { this.playTone(300, 'triangle', 0.2, 0.1); },
+    playFail() { this.playTone(150, 'sawtooth', 0.4, 0.2, 0.8); }
 };
 
 /**
- * --- DYNAMIC SHAPE GENERATOR (100% LOGICAL CUTS) ---
+ * --- DYNAMIC FOOD GENERATOR ---
+ * Tạo các khối hình mô phỏng đồ ăn với nhiều loại hạt/trang trí
  */
-const ShapeGenerator = {
-    createRect: () => [{x: -1, y: -0.2}, {x: 1, y: -0.2}, {x: 1, y: 1}, {x: -1, y: 1}],
-    createTriangle: () => [{x: -1, y: -1}, {x: 1, y: 1}, {x: -1, y: 1}],
-    createTrapezoid: () => [{x: -1, y: 0}, {x: 0.5, y: -1}, {x: 1, y: -1}, {x: 1, y: 1}, {x: -1, y: 1}],
-    createPentagon: () => [{x: -1, y: -1}, {x: 0.2, y: -1}, {x: 1, y: -0.2}, {x: 1, y: 1}, {x: -1, y: 1}],
-    createLShape: () => [{x: -1, y: -1}, {x: 0, y: -1}, {x: 0, y: 0}, {x: 1, y: 0}, {x: 1, y: 1}, {x: -1, y: 1}],
-    createChevron: () => [{x: -1, y: -1}, {x: 1, y: -1}, {x: 1, y: 1}, {x: 0, y: 0.2}, {x: -1, y: 1}],
-    createHouse: () => [{x: -1, y: 0.2}, {x: 0, y: -1}, {x: 1, y: 0.2}, {x: 1, y: 1}, {x: -1, y: 1}],
+const FoodGenerator = {
+    createCircle: (points = 40) => {
+        let pts = [];
+        for(let i=0; i<points; i++) {
+            let a = (i/points) * Math.PI * 2;
+            pts.push({x: Math.cos(a), y: Math.sin(a)});
+        }
+        return pts;
+    },
+    createSquare: () => [{x: -1, y: -1}, {x: 1, y: -1}, {x: 1, y: 1}, {x: -1, y: 1}],
+    createRect: () => [{x: -1, y: -0.6}, {x: 1, y: -0.6}, {x: 1, y: 0.6}, {x: -1, y: 0.6}],
+    createTriangle: () => [{x: -1, y: 0.8}, {x: 1, y: 0.8}, {x: 0, y: -1}],
 
-    getRandomTarget: () => {
-        const categories = [
-            { name: 'TAM GIÁC', gen: ShapeGenerator.createTriangle },
-            { name: 'CHỮ NHẬT', gen: ShapeGenerator.createRect },
-            { name: 'HÌNH THANG', gen: ShapeGenerator.createTrapezoid },
-            { name: 'NGŨ GIÁC', gen: ShapeGenerator.createPentagon },
-            { name: 'CHỮ L', gen: ShapeGenerator.createLShape },
-            { name: 'ĐUÔI NHEO', gen: ShapeGenerator.createChevron },
-            { name: 'NGÔI NHÀ', gen: ShapeGenerator.createHouse }
+    getRandomFood: () => {
+        const foods = [
+            { id: 'watermelon', name: 'DƯA HẤU', shape: FoodGenerator.createCircle(), flesh: '#f43f5e', rind: '#10b981', seedColor: '#1e293b', seedType: 'dot' },
+            { id: 'orange', name: 'CAM/CHANH', shape: FoodGenerator.createCircle(), flesh: '#fb923c', rind: '#fef08a', seedColor: '#fffbeb', seedType: 'line' },
+            { id: 'kiwi', name: 'KIWI', shape: FoodGenerator.createCircle(), flesh: '#84cc16', rind: '#78350f', seedColor: '#1e293b', seedType: 'dot' },
+            { id: 'dragonfruit', name: 'THANH LONG', shape: FoodGenerator.createCircle(), flesh: '#ffffff', rind: '#ec4899', seedColor: '#000000', seedType: 'tiny_dot' },
+            { id: 'avocado', name: 'QUẢ BƠ', shape: FoodGenerator.createCircle(), flesh: '#d9f99d', rind: '#064e3b', seedColor: '#78350f', seedType: 'center_stone' },
+            { id: 'pizza', name: 'PIZZA', shape: FoodGenerator.createTriangle(), flesh: '#fde047', rind: '#d97706', seedColor: '#ef4444', seedType: 'pepperoni' },
+            { id: 'cake', name: 'BÁNH KEM', shape: FoodGenerator.createSquare(), flesh: '#fef08a', rind: '#a855f7', seedColor: '#f472b6', seedType: 'sprinkle' },
+            { id: 'cheese', name: 'PHÔ MAI', shape: FoodGenerator.createTriangle(), flesh: '#facc15', rind: '#eab308', seedColor: '#ca8a04', seedType: 'hole' },
+            { id: 'chocolate', name: 'SO-CO-LA', shape: FoodGenerator.createRect(), flesh: '#78350f', rind: '#451a03', seedColor: '#451a03', seedType: 'grid' }
         ];
-        const cat = categories[Math.floor(Math.random() * categories.length)];
-        return {
-            name: cat.name,
-            points: cat.gen(),
-            draw: function(ctx, cx, cy, size) {
-                ctx.moveTo(cx + this.points[0].x * size, cy + this.points[0].y * size);
-                for(let i = 1; i < this.points.length; i++) ctx.lineTo(cx + this.points[i].x * size, cy + this.points[i].y * size);
-                ctx.closePath();
-            }
-        };
+        return foods[Math.floor(Math.random() * foods.length)];
     }
 };
+
+/**
+ * --- DYNAMIC WEIGHT TARGETS ---
+ * Linh hoạt tạo ra các yêu cầu cắt về Cân nặng/Phần trăm
+ */
+function getRandomTargetWeight() {
+    const isFraction = Math.random() > 0.5;
+    if (isFraction) {
+        const fractions = [
+            { text: "1/2", val: 50 }, { text: "1/4", val: 25 }, 
+            { text: "3/4", val: 75 }, { text: "1/3", val: 33.3 }, 
+            { text: "2/3", val: 66.6 }
+        ];
+        return fractions[Math.floor(Math.random() * fractions.length)];
+    } else {
+        // Random percentage between 10% and 80%, step by 5%
+        const percents = [15, 20, 30, 40, 45, 60, 70, 80];
+        const val = percents[Math.floor(Math.random() * percents.length)];
+        return { text: val + "%", val: val };
+    }
+}
 
 /**
  * --- CONFIG & MODES ---
  */
 const MODES = {
-    'straight': { id: 'straight', name: 'CẮT THẲNG', icon: '📏', color: '#38bdf8' },
-    'angle': { id: 'angle', name: 'CẮT GÓC', icon: '📐', color: '#f43f5e' }
+    'straight': { id: 'straight', name: 'CẮT THẲNG', icon: '🔪', color: '#cbd5e1' },
+    'angle': { id: 'angle', name: 'CẮT GÓC', icon: '✂️', color: '#cbd5e1' }
 };
 
 const MathUtils = {
+    getArea: function(vertices) {
+        let area = 0;
+        for (let i = 0; i < vertices.length; i++) {
+            let j = (i + 1) % vertices.length;
+            area += vertices[i].x * vertices[j].y - vertices[j].x * vertices[i].y;
+        }
+        return Math.abs(area / 2);
+    },
     getCentroid: function(vertices) {
         let x = 0, y = 0, area = 0;
         for (let i = 0; i < vertices.length; i++) {
@@ -320,10 +323,7 @@ const MathUtils = {
             area += factor; x += (vertices[i].x + vertices[j].x) * factor; y += (vertices[i].y + vertices[j].y) * factor;
         }
         area /= 2;
-        if (Math.abs(area) < 0.0001) {
-            if (vertices.length > 0) return { x: vertices.reduce((s, v) => s + v.x, 0) / vertices.length, y: vertices.reduce((s, v) => s + v.y, 0) / vertices.length };
-            return { x: 0, y: 0 };
-        }
+        if (Math.abs(area) < 0.0001) return { x: 0, y: 0 };
         x /= 6 * area; y /= 6 * area; return { x, y };
     },
     getBoundingBox: function(vertices) {
@@ -346,47 +346,16 @@ const MathUtils = {
 };
 
 /**
- * --- ADVANCED IOU ---
- */
-function calculateIoU(polyVertices, targetObj, baseSize) {
-    const mCanvas = document.getElementById('match-canvas');
-    const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
-    mCtx.clearRect(0, 0, 100, 100);
-
-    const centroid = MathUtils.getCentroid(polyVertices);
-    
-    mCtx.fillStyle = '#0000FF'; mCtx.beginPath();
-    polyVertices.forEach((p, i) => {
-        const nx = 50 + ((p.x - centroid.x) / baseSize) * 40; 
-        const ny = 50 + ((p.y - centroid.y) / baseSize) * 40;
-        if (i === 0) mCtx.moveTo(nx, ny); else mCtx.lineTo(nx, ny);
-    });
-    mCtx.closePath(); mCtx.fill();
-
-    mCtx.globalCompositeOperation = 'screen'; mCtx.fillStyle = '#FF0000'; mCtx.beginPath();
-    targetObj.draw(mCtx, 50, 50, 40); mCtx.fill(); mCtx.globalCompositeOperation = 'source-over';
-
-    const imageData = mCtx.getImageData(0, 0, 100, 100).data;
-    let intersection = 0; let union = 0;
-    for (let i = 0; i < imageData.length; i += 4) {
-        const r = imageData[i]; const b = imageData[i + 2];
-        if (r > 128 && b > 128) intersection++;
-        if (r > 128 || b > 128) union++;
-    }
-    if (union === 0) return 0; return (intersection / union) * 100;
-}
-
-/**
  * --- GAME FEEL CLASSES ---
  */
 class SlashEffect {
-    constructor(points, color) { this.points = points; this.color = color; this.opacity = 1; this.life = 15; }
+    constructor(points) { this.points = points; this.opacity = 1; this.life = 10; }
     update() { this.opacity -= 1/this.life; return this.opacity > 0; }
     draw(ctx) {
         if(this.points.length < 2) return;
         ctx.save(); ctx.globalAlpha = this.opacity;
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 6 * this.opacity; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        ctx.shadowBlur = 20; ctx.shadowColor = this.color;
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 8 * this.opacity; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#cbd5e1';
         ctx.beginPath(); ctx.moveTo(this.points[0].x, this.points[0].y);
         for(let i=1; i<this.points.length; i++) ctx.lineTo(this.points[i].x, this.points[i].y);
         ctx.stroke(); ctx.restore();
@@ -396,47 +365,48 @@ class SlashEffect {
 class Explosion {
     constructor(x, y, color) {
         this.particles = [];
-        for(let i=0; i<30; i++) {
-            const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 15 + 5;
-            this.particles.push({ x: x, y: y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 1, size: Math.random() * 8 + 3, color: color });
+        for(let i=0; i<20; i++) {
+            const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 10 + 5;
+            this.particles.push({ x: x, y: y, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, life: 1, size: Math.random() * 8 + 4, color: color });
         }
     }
     update() {
         let alive = false;
-        this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.8; p.life -= 0.04; if(p.life > 0) alive = true; });
+        this.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.8; p.life -= 0.05; if(p.life > 0) alive = true; });
         return alive;
     }
     draw(ctx) {
         ctx.save();
         this.particles.forEach(p => {
             if(p.life <= 0) return;
-            ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.shadowBlur = 15; ctx.shadowColor = p.color;
+            ctx.globalAlpha = p.life; ctx.fillStyle = p.color;
             ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
         });
         ctx.restore();
     }
 }
 
-class PolygonArea {
-    constructor(vertices) {
-        this.vertices = vertices; this.centroid = MathUtils.getCentroid(vertices);
-        this.color = '#1e293b'; this.borderColor = '#475569'; this.glow = null;
-        this.vx = (Math.random() - 0.5) * 15; this.vy = 0; this.gravity = 0;
-        this.rotation = 0; this.angularVelocity = (Math.random() - 0.5) * 0.3;
+class FoodPolygon {
+    constructor(vertices, foodDef, originalCenter, baseSize) {
+        this.vertices = vertices; 
+        this.area = MathUtils.getArea(vertices);
+        this.centroid = MathUtils.getCentroid(vertices);
+        
+        this.foodDef = foodDef;
+        this.originalCenter = originalCenter; 
+        this.baseSize = baseSize;
+
+        this.vx = (Math.random() - 0.5) * 12; this.vy = 0; this.gravity = 0;
+        this.rotation = 0; this.angularVelocity = (Math.random() - 0.5) * 0.2;
         this.isAnalysis = false;
     }
+
     setAnalysisMode() {
-        this.color = '#0ea5e9'; this.borderColor = '#fff'; this.glow = '#0ea5e9';
-        this.vx = 0; this.vy = 0; this.gravity = 0; this.angularVelocity = 0; this.isAnalysis = true;
+        this.vx = 0; this.vy = 0; this.gravity = 0; this.angularVelocity = 0; this.rotation = 0; this.isAnalysis = true;
     }
-    applyFeedback(percent) {
-        if (percent >= 80) { this.color = '#10b981'; this.borderColor = '#34d399'; this.glow = '#10b981'; this.vy = -15; } 
-        else if (percent >= 60) { this.color = '#0ea5e9'; this.borderColor = '#38bdf8'; this.glow = '#0ea5e9'; this.vy = -10; } 
-        else if (percent >= 40) { this.color = '#f59e0b'; this.borderColor = '#fbbf24'; this.vy = -5; } 
-        else { this.color = '#ef4444'; this.borderColor = '#fca5a5'; this.glow = '#ef4444'; this.vy = 0; }
-        this.gravity = 1.2;
-    }
-    setMiss() { this.color = 'rgba(15,23,42,0.3)'; this.borderColor = '#334155'; this.vy = 8; this.gravity = 1.5; }
+    
+    setMiss() { this.vy = -5; this.gravity = 1.5; }
+    
     update() {
         if (this.gravity > 0 && !this.isAnalysis) {
             this.vy += this.gravity; this.centroid.x += this.vx; this.centroid.y += this.vy;
@@ -444,18 +414,103 @@ class PolygonArea {
             this.vertices = this.vertices.map(p => ({ x: p.x + this.vx, y: p.y + this.vy }));
         }
     }
+    
     draw(ctx) {
         if (this.vertices.length < 3) return;
-        ctx.save(); ctx.translate(this.centroid.x, this.centroid.y); ctx.rotate(this.rotation); ctx.translate(-this.centroid.x, -this.centroid.y);
+        ctx.save(); 
+        
+        if (!this.isAnalysis) {
+            ctx.translate(this.centroid.x, this.centroid.y); 
+            ctx.rotate(this.rotation); 
+            ctx.translate(-this.centroid.x, -this.centroid.y);
+        }
+
+        // 1. Tạo path cho hình
         ctx.beginPath(); ctx.moveTo(this.vertices[0].x, this.vertices[0].y);
         for (let i = 1; i < this.vertices.length; i++) ctx.lineTo(this.vertices[i].x, this.vertices[i].y);
         ctx.closePath();
-        ctx.fillStyle = this.color; if (this.glow) { ctx.shadowBlur = this.isAnalysis? 40 : 25; ctx.shadowColor = this.glow; }
-        ctx.fill(); ctx.shadowBlur = 0; ctx.lineWidth = this.isAnalysis? 4 : 3; ctx.strokeStyle = this.borderColor; ctx.stroke(); ctx.restore();
+        
+        // 2. Vẽ Ruột (Flesh)
+        ctx.fillStyle = this.foodDef.flesh;
+        ctx.fill();
+
+        // 3. Vẽ Viền/Vỏ (Rind)
+        ctx.lineWidth = 12; 
+        ctx.strokeStyle = this.foodDef.rind;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        // 4. Vẽ Hạt/Decorations (Clipping mask)
+        ctx.save();
+        ctx.clip(); // Chỉ vẽ hạt bên trong phần thịt
+        
+        ctx.fillStyle = this.foodDef.seedColor;
+        const bbox = MathUtils.getBoundingBox(this.vertices);
+        
+        // --- Xử lý các loại Hạt đặc biệt ---
+        if (this.foodDef.seedType === 'center_stone') {
+            // Hạt Bơ (nằm cố định ở tâm ban đầu)
+            ctx.beginPath();
+            ctx.arc(this.originalCenter.x, this.originalCenter.y, this.baseSize * 0.35, 0, Math.PI*2);
+            ctx.fill();
+            // Đốm sáng trên hạt
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath();
+            ctx.arc(this.originalCenter.x - this.baseSize*0.1, this.originalCenter.y - this.baseSize*0.1, this.baseSize * 0.1, 0, Math.PI*2);
+            ctx.fill();
+        } 
+        else if (this.foodDef.seedType === 'grid') {
+            // Lưới Sô-cô-la
+            ctx.strokeStyle = this.foodDef.seedColor;
+            ctx.lineWidth = 4;
+            const step = this.baseSize * 0.4;
+            let startX = Math.floor((bbox.minX - this.originalCenter.x) / step) * step + this.originalCenter.x;
+            let startY = Math.floor((bbox.minY - this.originalCenter.y) / step) * step + this.originalCenter.y;
+            
+            ctx.beginPath();
+            for (let x = startX; x <= bbox.maxX; x += step) { ctx.moveTo(x, bbox.minY); ctx.lineTo(x, bbox.maxY); }
+            for (let y = startY; y <= bbox.maxY; y += step) { ctx.moveTo(bbox.minX, y); ctx.lineTo(bbox.maxX, y); }
+            ctx.stroke();
+        }
+        else {
+            // Vẽ pattern phân bổ ngẫu nhiên có trật tự (Dots, Lines, Sprinkles, Pepperoni)
+            let seedDensity = 40;
+            if (this.foodDef.seedType === 'tiny_dot') seedDensity = 25;
+            if (this.foodDef.seedType === 'pepperoni') seedDensity = 50;
+
+            let startX = Math.floor((bbox.minX - this.originalCenter.x) / seedDensity) * seedDensity + this.originalCenter.x;
+            let startY = Math.floor((bbox.minY - this.originalCenter.y) / seedDensity) * seedDensity + this.originalCenter.y;
+
+            for (let x = startX; x <= bbox.maxX; x += seedDensity) {
+                for (let y = startY; y <= bbox.maxY; y += seedDensity) {
+                    const offsetX = (Math.sin(x*1.2 + y) * 10);
+                    const offsetY = (Math.cos(y*1.5 + x) * 10);
+                    const px = x + offsetX; const py = y + offsetY;
+
+                    ctx.beginPath();
+                    if (this.foodDef.seedType === 'dot') {
+                        ctx.arc(px, py, 4, 0, Math.PI*2); ctx.fill();
+                    } else if (this.foodDef.seedType === 'tiny_dot') {
+                        ctx.arc(px, py, 2, 0, Math.PI*2); ctx.fill();
+                    } else if (this.foodDef.seedType === 'pepperoni') {
+                        ctx.arc(px, py, 12, 0, Math.PI*2); ctx.fill();
+                    } else if (this.foodDef.seedType === 'line') {
+                        ctx.moveTo(px-6, py-6); ctx.lineTo(px+6, py+6);
+                        ctx.strokeStyle = this.foodDef.seedColor; ctx.lineWidth = 3; ctx.stroke();
+                    } else if (this.foodDef.seedType === 'sprinkle') {
+                        ctx.save(); ctx.translate(px, py); ctx.rotate(offsetX);
+                        ctx.rect(-4, -1.5, 8, 3); ctx.fill(); ctx.restore();
+                    } else if (this.foodDef.seedType === 'hole') {
+                        ctx.arc(px, py, 8, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+            }
+        }
+        ctx.restore(); // Bỏ clip
+        ctx.restore();
     }
 }
 
-// Float text points (e.g. "+100")
 class FloatingText {
     constructor(x, y, text, color, isScore = false) {
         this.x = x; this.y = y; this.text = text;
@@ -466,9 +521,24 @@ class FloatingText {
     update() { this.y += this.vy; this.opacity -= 1/this.life; return this.opacity > 0; }
     draw(ctx) {
         ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity);
-        ctx.fillStyle = this.color; ctx.font = `900 ${this.size}px 'Montserrat'`;
-        ctx.textAlign = 'center'; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color; ctx.font = `900 ${this.size}px 'Baloo 2'`;
+        ctx.textAlign = 'center'; 
+        ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeText(this.text, this.x, this.y);
         ctx.fillText(this.text, this.x, this.y); ctx.restore();
+    }
+}
+
+class JuiceSplash {
+    constructor(x, y, color) {
+        this.x = x; this.y = y; this.color = color;
+        this.radius = 5; this.maxRadius = Math.random() * 50 + 30;
+        this.opacity = 0.5;
+    }
+    update() { this.radius += (this.maxRadius - this.radius) * 0.2; this.opacity -= 0.05; return this.opacity > 0; }
+    draw(ctx) {
+        ctx.save(); ctx.globalAlpha = this.opacity; ctx.fillStyle = this.color;
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
     }
 }
 
@@ -479,21 +549,22 @@ let gameState = 'MENU';
 const canvasWrapper = document.getElementById('canvas-wrapper');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const tCtx = document.getElementById('target-canvas').getContext('2d');
 
 let width, height;
-let polygons = [], slashes = [], explosions = [], floatingTexts = [];
+let polygons = [], slashes = [], explosions = [], floatingTexts = [], splashes = [];
 let isDragging = false, score = 0, combo = 0, shakeAmount = 0;
 let hitStopFrames = 0; 
 
-let currentTarget = null, activeModes = [], selectedMode = '', strokePoints = [];
+let currentFoodDef = null, currentTargetWeight = null;
+let activeModes = [], selectedMode = '', strokePoints = [];
 let baseSquareSize = 0; 
+let ORIGINAL_AREA = 0;
 
 const MAX_TIME = 100; let timeLeft = MAX_TIME; let timeDropRate = 0.04; 
 
-let analysisTargetShape = null;
-let analysisMatchScore = 0;
-let analysisDisplayScore = 0;
+let analysisMatchScore = 0; // Thang 100 điểm
+let analysisDisplayPercent = 0; // % đang chạy trên UI
+let analysisActualPercent = 0; // % Cân nặng thực tế (vd: 52%)
 let analysisTimer = 0;
 let lastScanTime = 0;
 
@@ -512,15 +583,6 @@ function showMenu() {
     document.getElementById('game-ui').classList.add('hidden-screen');
     document.getElementById('game-over').classList.add('hidden-screen');
     document.getElementById('fever-overlay').style.opacity = 0;
-}
-
-function drawTargetUI() {
-    tCtx.clearRect(0, 0, 80, 80); tCtx.beginPath(); currentTarget.draw(tCtx, 40, 40, 30);
-    tCtx.fillStyle = '#38bdf8'; tCtx.shadowBlur = 15; tCtx.shadowColor = '#38bdf8'; tCtx.fill(); tCtx.shadowBlur = 0;
-    document.getElementById('target-name').innerText = currentTarget.name;
-    const box = document.getElementById('target-container');
-    box.style.transform = 'scale(1.1)'; box.style.borderColor = '#38bdf8';
-    setTimeout(() => { box.style.transform = 'scale(1)'; box.style.borderColor = 'rgba(56, 189, 248, 0.2)'; }, 200);
 }
 
 function updateUI() {
@@ -565,21 +627,29 @@ function startNextLevel() {
     gameState = 'PLAYING'; polygons = []; strokePoints = []; hitStopFrames = 0;
     document.getElementById('analysis-overlay').classList.remove('active');
     
-    currentTarget = ShapeGenerator.getRandomTarget(); drawTargetUI();
+    currentFoodDef = FoodGenerator.getRandomFood();
+    currentTargetWeight = getRandomTargetWeight();
     
-    const allModes = Object.keys(MODES); allModes.sort(() => 0.5 - Math.random()); activeModes = allModes.slice(0, 2);
+    document.getElementById('target-name').innerText = currentTargetWeight.text;
+    document.getElementById('target-name').style.color = currentFoodDef.flesh;
+    
+    activeModes = ['straight', 'angle']; 
     for(let i=0; i<2; i++) {
         const btn = document.getElementById(`btn-mode-${i}`); const md = MODES[activeModes[i]];
         btn.innerHTML = `<span class="icon">${md.icon}</span><span>${md.name}</span>`;
     }
     selectMode(0);
 
-    const padding = 40; baseSquareSize = (Math.min(width, height) - padding * 2) / 2;
+    // KÍCH THƯỚC LINH HOẠT: Tạo random scale từ 0.75 đến 1.15
+    const scaleModifier = 0.75 + Math.random() * 0.4;
+    const padding = 50; 
+    baseSquareSize = ((Math.min(width, height) - padding * 2) / 2) * scaleModifier;
+    
     const x = width / 2; const y = height / 2;
-    polygons.push(new PolygonArea([
-        {x: x - baseSquareSize, y: y - baseSquareSize}, {x: x + baseSquareSize, y: y - baseSquareSize}, 
-        {x: x + baseSquareSize, y: y + baseSquareSize}, {x: x - baseSquareSize, y: y + baseSquareSize}
-    ]));
+    let baseVertices = currentFoodDef.shape.map(p => ({ x: x + p.x * baseSquareSize, y: y + p.y * baseSquareSize }));
+    ORIGINAL_AREA = MathUtils.getArea(baseVertices);
+    
+    polygons.push(new FoodPolygon(baseVertices, currentFoodDef, {x, y}, baseSquareSize));
 }
 
 function cutPolygonWithPolyline(poly, linePoints) {
@@ -610,7 +680,8 @@ function cutPolygonWithPolyline(poly, linePoints) {
     currIdx = (entry.edgeIdx + 1) % pVerts.length; safety = 0;
     while (currIdx !== (exit.edgeIdx + 1) % pVerts.length && safety < 100) { piece2.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length; safety++; }
 
-    const p1 = new PolygonArea(piece1); const p2 = new PolygonArea(piece2);
+    const p1 = new FoodPolygon(piece1, poly.foodDef, poly.originalCenter, poly.baseSize); 
+    const p2 = new FoodPolygon(piece2, poly.foodDef, poly.originalCenter, poly.baseSize);
     if (p1.area < 1 || p2.area < 1) return [poly]; return [p1, p2];
 }
 
@@ -642,7 +713,8 @@ function resolveCut() {
     }
 
     AudioSys.playSlash();
-    slashes.push(new SlashEffect(finalPath, MODES[selectedMode].color));
+    slashes.push(new SlashEffect(finalPath));
+    splashes.push(new JuiceSplash(strokePoints[Math.floor(strokePoints.length/2)].x, strokePoints[Math.floor(strokePoints.length/2)].y, currentFoodDef.flesh));
 
     let newPieces = []; let cutHappened = false;
     polygons.forEach(poly => {
@@ -652,30 +724,38 @@ function resolveCut() {
 
     if (!cutHappened) { 
         strokePoints = []; triggerShake(5); 
-        floatingTexts.push(new FloatingText(width/2, height/2, "HỤT!", "#ef4444", false));
+        floatingTexts.push(new FloatingText(width/2, height/2, "HỤT RỒI!", "#ef4444", false));
         return; 
     }
 
     polygons = newPieces; 
-    hitStopFrames = 8; // Kích hoạt ngưng đọng thời gian (Hit-stop)
+    hitStopFrames = 5; 
     AudioSys.playImpact();
 
-    let bestPiece = null; let bestMatchScore = 0;
+    let bestPiece = null; let bestAccuracy = 0; let bestActualPercent = 0;
+    const targetW = currentTargetWeight.val;
+    
     polygons.forEach(poly => {
-        const matchScore = calculateIoU(poly.vertices, currentTarget, baseSquareSize);
-        if (matchScore > bestMatchScore) { bestMatchScore = matchScore; bestPiece = poly; }
+        const pct = (poly.area / ORIGINAL_AREA) * 100;
+        // Sai 1% mất 4% độ chính xác
+        const diff = Math.abs(pct - targetW);
+        const accuracy = Math.max(0, 100 - (diff * 4)); 
+
+        if (accuracy > bestAccuracy || bestPiece === null) { 
+            bestAccuracy = accuracy; bestPiece = poly; bestActualPercent = pct;
+        }
     });
 
     gameState = 'ANALYZING';
-    analysisMatchScore = Math.min(100, Math.round(bestMatchScore));
-    analysisDisplayScore = 0;
-    analysisTimer = 45; // Đẩy nhanh thời gian quét
-    analysisTargetShape = bestPiece;
+    analysisMatchScore = Math.min(100, Math.round(bestAccuracy));
+    analysisActualPercent = bestActualPercent;
+    analysisDisplayPercent = 0;
+    analysisTimer = 30;
 
     polygons.forEach(p => { 
         if (p === bestPiece) {
             p.setAnalysisMode();
-            const cx = width / 2; const cy = height / 2;
+            const cx = width / 2; const cy = height / 2 - 20;
             const dx = cx - p.centroid.x; const dy = cy - p.centroid.y;
             p.vertices = p.vertices.map(v => ({ x: v.x + dx, y: v.y + dy }));
             p.centroid = { x: cx, y: cy };
@@ -684,51 +764,50 @@ function resolveCut() {
         }
     });
 
+    document.getElementById('target-compare-val').innerText = currentTargetWeight.text;
     document.getElementById('analysis-overlay').classList.add('active');
-    triggerShake(8);
+    triggerShake(5);
 }
 
 function processAnalysisResult() {
     let pts = 0; let color = ''; let text = '';
     const pct = analysisMatchScore;
 
-    if (pct >= 80) {
-        combo++; pts = 100 * combo; text = `PERFECT!`; color = '#10b981';
+    if (pct >= 85) {
+        combo++; pts = 100 * combo; text = `HOÀN HẢO!`; color = '#10b981';
         triggerShake(12); flashScreen();
-        explosions.push(new Explosion(width/2, height/2, '#10b981'));
+        explosions.push(new Explosion(width/2, height/2, color));
         timeLeft = Math.min(MAX_TIME, timeLeft + 30);
         AudioSys.playPerfect();
     } else if (pct >= 60) {
-        combo = 1; pts = 60; text = `GOOD`; color = '#38bdf8';
+        combo = 1; pts = 60; text = `TỐT!`; color = '#38bdf8';
         timeLeft = Math.min(MAX_TIME, timeLeft + 15);
         AudioSys.playGood();
-    } else if (pct >= 40) {
-        combo = 1; pts = 30; text = `ALMOST`; color = '#fbbf24';
+    } else if (pct >= 30) {
+        combo = 1; pts = 30; text = `TẠM ĐƯỢC`; color = '#fbbf24';
         timeLeft = Math.min(MAX_TIME, timeLeft + 5);
         AudioSys.playAlmost();
     } else {
-        combo = 0; text = `FAIL`; color = '#ef4444'; triggerShake(15);
+        combo = 0; text = `QUÁ TỆ`; color = '#ef4444'; triggerShake(15);
         AudioSys.playFail();
     }
 
     score += pts; updateUI();
     const stEl = document.getElementById('scan-status');
     stEl.innerText = text; stEl.style.color = color;
-    document.getElementById('scan-percent').style.background = `linear-gradient(to bottom, #fff, ${color})`;
-    document.getElementById('scan-percent').style.webkitBackgroundClip = 'text';
+    document.getElementById('scan-percent').style.color = color;
 
-    // Bắn điểm số lên màn hình
     if(pts > 0) {
-        floatingTexts.push(new FloatingText(width/2, height/2 - 50, `+${pts}`, color, true));
+        floatingTexts.push(new FloatingText(width/2, height/2 - 120, `+${pts}`, color, true));
     }
 
     setTimeout(() => {
-        if (pct < 40) gameOver("Cắt quá sai lệch (< 40%)");
+        if (pct < 30) gameOver("Trọng lượng sai lệch quá nhiều!");
         else {
             timeDropRate += 0.003; 
             startNextLevel();
         }
-    }, 600); // Rút ngắn thời gian chờ kết quả -> màn mới
+    }, 800); 
 }
 
 /**
@@ -789,52 +868,35 @@ function animate() {
             shakeAmount *= 0.8; if (shakeAmount < 0.5) shakeAmount = 0;
         }
 
-        // Logic Hit-Stop
         if (hitStopFrames > 0) {
             hitStopFrames--;
-            // Làm tối màn hình nhẹ tạo hiệu ứng Focus
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(0,0,width,height);
         } else {
             polygons.forEach(poly => poly.update());
         }
 
-        // Draw everything
+        for (let i = splashes.length - 1; i >= 0; i--) { if (!splashes[i].update()) splashes.splice(i, 1); else splashes[i].draw(ctx); }
+
         polygons.forEach(poly => poly.draw(ctx));
 
-        // Draw Blueprint Target in Analysis Mode
-        if (gameState === 'ANALYZING' && analysisTargetShape) {
-            ctx.save();
-            ctx.translate(width/2, height/2);
-            ctx.beginPath(); currentTarget.draw(ctx, 0, 0, baseSquareSize);
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 3; ctx.setLineDash([10, 5]);
-            ctx.shadowBlur = 10; ctx.shadowColor = '#ef4444';
-            ctx.stroke(); ctx.setLineDash([]);
-            ctx.restore();
-
-            // Animate Score Counting
+        if (gameState === 'ANALYZING') {
             if (analysisTimer > 0) {
                 analysisTimer--;
-                analysisDisplayScore += (analysisMatchScore - analysisDisplayScore) * 0.2;
-                document.getElementById('scan-percent').innerText = `${Math.round(analysisDisplayScore)}%`;
-                document.getElementById('scan-percent').style.background = `linear-gradient(to bottom, #fff, #94a3b8)`;
-                document.getElementById('scan-percent').style.webkitBackgroundClip = 'text';
-                document.getElementById('scan-status').innerText = "PHÂN TÍCH...";
+                analysisDisplayPercent += (analysisActualPercent - analysisDisplayPercent) * 0.2;
+                document.getElementById('scan-percent').innerText = `${analysisDisplayPercent.toFixed(1)}%`;
+                document.getElementById('scan-percent').style.color = '#334155';
+                document.getElementById('scan-status').innerText = "ĐANG CÂN...";
                 document.getElementById('scan-status').style.color = '#94a3b8';
                 
-                // Tiếng tít tít khi quét
                 const now = Date.now();
-                if (now - lastScanTime > 50) { AudioSys.playScan(); lastScanTime = now; }
+                if (now - lastScanTime > 30) { AudioSys.playTick(); lastScanTime = now; }
 
                 if (analysisTimer <= 0) {
-                    analysisDisplayScore = analysisMatchScore;
-                    document.getElementById('scan-percent').innerText = `${analysisMatchScore}%`;
+                    document.getElementById('scan-percent').innerText = `${analysisActualPercent.toFixed(1)}%`;
                     processAnalysisResult();
                 }
             }
         }
 
-        // Draw Player Input (Preview)
         if (isDragging && strokePoints.length > 1) {
             ctx.beginPath();
             const start = strokePoints[0]; const end = strokePoints[strokePoints.length - 1];
@@ -849,11 +911,10 @@ function animate() {
                 }
                 ctx.moveTo(start.x, start.y); if (maxDist > 10) ctx.lineTo(cornerPoint.x, cornerPoint.y); ctx.lineTo(end.x, end.y);
             } 
-            const modeColor = MODES[selectedMode].color;
-            ctx.strokeStyle = modeColor; ctx.lineWidth = 4; ctx.shadowBlur = 15; ctx.shadowColor = modeColor;
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.shadowBlur = 10; ctx.shadowColor = '#cbd5e1';
             ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); ctx.shadowBlur = 0;
             ctx.beginPath(); ctx.arc(end.x, end.y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#fff'; ctx.fill(); ctx.shadowBlur = 0;
+            ctx.fillStyle = '#fff'; ctx.shadowBlur = 5; ctx.shadowColor = '#fff'; ctx.fill(); ctx.shadowBlur = 0;
         }
 
         for (let i = slashes.length - 1; i >= 0; i--) { if (!slashes[i].update()) slashes.splice(i, 1); else slashes[i].draw(ctx); }
