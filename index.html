@@ -130,10 +130,8 @@
     <div class="bg-grid"></div>
 
     <div id="game-container">
-        
         <!-- MAIN MENU -->
         <div id="main-menu" class="screen">
-            <!-- Geometric Logo Trang trí -->
             <div class="mb-8 relative w-28 h-28 flex items-center justify-center">
                 <div class="absolute inset-0 bg-sky-500/20 rounded-2xl transform rotate-12 animate-pulse border border-sky-400/50"></div>
                 <div class="absolute inset-0 border-4 border-sky-400 rounded-2xl transform -rotate-6 logo-shape"></div>
@@ -185,7 +183,7 @@
         <!-- GAME OVER -->
         <div id="game-over" class="screen hidden-screen">
             <h2 class="text-red-500 text-5xl font-black mb-2 uppercase tracking-widest text-glow text-center">THẤT BẠI</h2>
-            <p class="text-slate-300 text-sm mb-8 font-bold">KHÔNG ĐẠT ĐỘ CHÍNH XÁC</p>
+            <p class="text-slate-300 text-sm mb-8 font-bold">KHÔNG ĐẠT ĐỘ CHÍNH XÁC (< 40%)</p>
             
             <div class="glass-panel p-6 text-center mb-8 min-w-[250px]">
                 <p class="text-slate-400 text-xs uppercase tracking-widest mb-2 font-bold">TỔNG ĐIỂM</p>
@@ -263,7 +261,18 @@ const MathUtils = {
             let factor = (vertices[i].x * vertices[j].y - vertices[j].x * vertices[i].y);
             area += factor; x += (vertices[i].x + vertices[j].x) * factor; y += (vertices[i].y + vertices[j].y) * factor;
         }
-        area /= 2; x /= 6 * area; y /= 6 * area;
+        area /= 2;
+        // BẢO VỆ CHỐNG LỖI CHIA CHO 0: Nếu diện tích siêu nhỏ hoặc = 0, tính trung bình cộng thay thế
+        if (Math.abs(area) < 0.0001) {
+            if (vertices.length > 0) {
+                return {
+                    x: vertices.reduce((sum, v) => sum + v.x, 0) / vertices.length,
+                    y: vertices.reduce((sum, v) => sum + v.y, 0) / vertices.length
+                };
+            }
+            return { x: 0, y: 0 };
+        }
+        x /= 6 * area; y /= 6 * area;
         return { x, y };
     },
     getBoundingBox: function(vertices) {
@@ -282,7 +291,6 @@ const MathUtils = {
         if (den === 0) return null;
         const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / den;
         const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / den;
-        // Bổ sung epsilon (0.001) để xử lý việc đường cắt đi qua trùng khít với các góc (đỉnh) của hình
         if (t >= -0.001 && t <= 1.001 && u >= -0.001 && u <= 1.001) {
             return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
         }
@@ -299,13 +307,12 @@ function calculateIoU(polyVertices, targetObj) {
     mCtx.clearRect(0, 0, 100, 100);
 
     const bbox = MathUtils.getBoundingBox(polyVertices);
-    if (bbox.w < 1 || bbox.h < 1) return 0; // Tránh lỗi cắt ra mảnh siêu hẹp hoặc 1D
+    if (bbox.w < 1 || bbox.h < 1) return 0; // Tránh lỗi chia cho 0 nếu shape quá bé
 
     const scale = Math.min(80 / bbox.w, 80 / bbox.h);
     const cx = bbox.minX + bbox.w / 2;
     const cy = bbox.minY + bbox.h / 2;
 
-    // Draw Player shape
     mCtx.fillStyle = '#0000FF'; mCtx.beginPath();
     polyVertices.forEach((p, i) => {
         const nx = 50 + (p.x - cx) * scale; const ny = 50 + (p.y - cy) * scale;
@@ -313,7 +320,6 @@ function calculateIoU(polyVertices, targetObj) {
     });
     mCtx.closePath(); mCtx.fill();
 
-    // Draw Target Shape
     mCtx.globalCompositeOperation = 'screen'; mCtx.fillStyle = '#FF0000'; mCtx.beginPath();
     targetObj.draw(mCtx, 50, 50, 35); mCtx.fill(); mCtx.globalCompositeOperation = 'source-over';
 
@@ -338,7 +344,7 @@ class Particle {
         this.speedY = Math.random() * 1 - 0.5;
         this.speedX = Math.random() * 1 - 0.5;
         this.opacity = Math.random() * 0.4 + 0.1;
-        this.type = Math.floor(Math.random() * 3); // 0: Circle, 1: Square, 2: Triangle
+        this.type = Math.floor(Math.random() * 3); 
         this.rotation = Math.random() * Math.PI * 2;
         this.rotSpeed = (Math.random() - 0.5) * 0.05;
     }
@@ -354,17 +360,9 @@ class Particle {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.rotation);
         ctx.beginPath(); 
-        
-        if (this.type === 0) {
-            ctx.arc(0, 0, this.size, 0, Math.PI*2);
-        } else if (this.type === 1) {
-            ctx.rect(-this.size, -this.size, this.size*2, this.size*2);
-        } else {
-            ctx.moveTo(0, -this.size);
-            ctx.lineTo(this.size, this.size);
-            ctx.lineTo(-this.size, this.size);
-        }
-        
+        if (this.type === 0) { ctx.arc(0, 0, this.size, 0, Math.PI*2); } 
+        else if (this.type === 1) { ctx.rect(-this.size, -this.size, this.size*2, this.size*2); } 
+        else { ctx.moveTo(0, -this.size); ctx.lineTo(this.size, this.size); ctx.lineTo(-this.size, this.size); }
         ctx.fill();
         ctx.restore();
     }
@@ -383,9 +381,9 @@ class PolygonArea {
     }
 
     applyFeedback(percent) {
-        if (percent >= 90) { this.color = '#10b981'; this.borderColor = '#34d399'; this.glow = '#10b981'; this.vy = -10; } 
-        else if (percent >= 75) { this.color = '#0ea5e9'; this.borderColor = '#38bdf8'; this.glow = '#0ea5e9'; this.vy = -7; } 
-        else if (percent >= 60) { this.color = '#f59e0b'; this.borderColor = '#fbbf24'; this.vy = -4; } 
+        if (percent >= 80) { this.color = '#10b981'; this.borderColor = '#34d399'; this.glow = '#10b981'; this.vy = -10; } 
+        else if (percent >= 60) { this.color = '#0ea5e9'; this.borderColor = '#38bdf8'; this.glow = '#0ea5e9'; this.vy = -7; } 
+        else if (percent >= 40) { this.color = '#f59e0b'; this.borderColor = '#fbbf24'; this.vy = -4; } 
         else { this.color = '#ef4444'; this.borderColor = '#fca5a5'; this.glow = '#ef4444'; this.vy = 0; }
         this.gravity = 0.8;
     }
@@ -424,9 +422,10 @@ class FloatingText {
     constructor(x, y, text, percent) {
         this.x = x; this.y = y; this.text = text;
         this.opacity = 1; this.life = 50;
-        if (percent >= 90) { this.color = '#34d399'; this.size = 36; }
-        else if (percent >= 75) { this.color = '#38bdf8'; this.size = 28; }
-        else if (percent >= 60) { this.color = '#fbbf24'; this.size = 24; }
+        if (percent >= 80) { this.color = '#34d399'; this.size = 36; }
+        else if (percent >= 60) { this.color = '#38bdf8'; this.size = 28; }
+        else if (percent >= 40) { this.color = '#fbbf24'; this.size = 24; }
+        else if (percent === 0) { this.color = '#a855f7'; this.size = 32; } // Màu riêng cho Cắt Hụt
         else { this.color = '#ef4444'; this.size = 40; }
     }
     update() { this.y -= 2; this.opacity -= 1/this.life; return this.opacity > 0; }
@@ -525,7 +524,6 @@ function startGame() {
 function startNextLevel() {
     isAnimatingResult = false; polygons = []; floatingTexts = []; strokePoints = []; currentStrokeLength = 0;
 
-    // Generate Dynamic Target
     currentTarget = ShapeGenerator.getRandomTarget();
     drawTargetUI();
 
@@ -555,6 +553,7 @@ function startNextLevel() {
 function cutPolygonWithPolyline(poly, linePoints) {
     if (linePoints.length < 2) return [poly];
     let intersections = []; const pVerts = poly.vertices;
+    
     for (let i = 0; i < pVerts.length; i++) {
         const edgeStart = pVerts[i]; const edgeEnd = pVerts[(i + 1) % pVerts.length];
         for (let j = 0; j < linePoints.length - 1; j++) {
@@ -565,7 +564,6 @@ function cutPolygonWithPolyline(poly, linePoints) {
 
     if (intersections.length < 2) return [poly];
     
-    // Khắc phục lỗi sắp xếp khi mảng giao điểm có trên cùng 1 đoạn cắt bằng khoảng cách thực
     intersections.sort((a, b) => {
         if (a.lineIdx !== b.lineIdx) return a.lineIdx - b.lineIdx;
         const distA = MathUtils.dist(linePoints[a.lineIdx], a.pt);
@@ -574,24 +572,34 @@ function cutPolygonWithPolyline(poly, linePoints) {
     });
     
     const entry = intersections[0]; const exit = intersections[intersections.length - 1];
+    
+    // Nếu điểm chạm vào gần như trùng nhau (chỉ cắt sượt qua góc) -> Bỏ qua
+    if (MathUtils.dist(entry.pt, exit.pt) < 1) return [poly];
 
     let piece1 = []; piece1.push(entry.pt);
     for (let i = entry.lineIdx + 1; i <= exit.lineIdx; i++) piece1.push(linePoints[i]);
     piece1.push(exit.pt);
     let currIdx = (exit.edgeIdx + 1) % pVerts.length;
-    while (currIdx !== (entry.edgeIdx + 1) % pVerts.length) {
-        piece1.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length;
+    let safety = 0;
+    while (currIdx !== (entry.edgeIdx + 1) % pVerts.length && safety < 100) {
+        piece1.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length; safety++;
     }
     
     let piece2 = []; piece2.push(exit.pt);
     for (let i = exit.lineIdx; i > entry.lineIdx; i--) piece2.push(linePoints[i]);
     piece2.push(entry.pt);
     currIdx = (entry.edgeIdx + 1) % pVerts.length;
-    while (currIdx !== (exit.edgeIdx + 1) % pVerts.length) {
-        piece2.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length;
+    safety = 0;
+    while (currIdx !== (exit.edgeIdx + 1) % pVerts.length && safety < 100) {
+        piece2.push(pVerts[currIdx]); currIdx = (currIdx + 1) % pVerts.length; safety++;
     }
 
-    return [new PolygonArea(piece1), new PolygonArea(piece2)];
+    const p1 = new PolygonArea(piece1);
+    const p2 = new PolygonArea(piece2);
+    
+    // Tránh lỗi tạo ra mảng quá bé không có diện tích
+    if (p1.area < 1 || p2.area < 1) return [poly]; 
+    return [p1, p2];
 }
 
 function resolveCut() {
@@ -619,7 +627,6 @@ function resolveCut() {
     }
 
     if (finalPath.length >= 2) {
-        // Tối ưu quá trình kéo dài đường cắt (Tránh jitter loạn vector do cảm ứng)
         const p0 = finalPath[0];
         let p1Idx = 1;
         while (p1Idx < finalPath.length - 1 && MathUtils.dist(p0, finalPath[p1Idx]) < 20) p1Idx++;
@@ -630,10 +637,13 @@ function resolveCut() {
         while (pl2Idx > 0 && MathUtils.dist(pl1, finalPath[pl2Idx]) < 20) pl2Idx--;
         const pl2 = finalPath[pl2Idx];
         
+        let extrapolatedPath = [...finalPath];
         const dStart = MathUtils.dist(p0, p1);
-        if (dStart > 0) finalPath[0] = { x: p0.x - ((p1.x - p0.x) / dStart) * 1000, y: p0.y - ((p1.y - p0.y) / dStart) * 1000 };
+        if (dStart > 0) extrapolatedPath[0] = { x: p0.x - ((p1.x - p0.x) / dStart) * 1000, y: p0.y - ((p1.y - p0.y) / dStart) * 1000 };
         const dEnd = MathUtils.dist(pl2, pl1);
-        if (dEnd > 0) finalPath[finalPath.length-1] = { x: pl1.x + ((pl1.x - pl2.x) / dEnd) * 1000, y: pl1.y + ((pl1.y - pl2.y) / dEnd) * 1000 };
+        if (dEnd > 0) extrapolatedPath[extrapolatedPath.length-1] = { x: pl1.x + ((pl1.x - pl2.x) / dEnd) * 1000, y: pl1.y + ((pl1.y - pl2.y) / dEnd) * 1000 };
+        
+        finalPath = extrapolatedPath;
     }
 
     let newPieces = []; let cutHappened = false;
@@ -643,7 +653,13 @@ function resolveCut() {
         newPieces.push(...result);
     });
 
-    if (!cutHappened) { strokePoints = []; return; }
+    // UX: Thông báo nếu nét vẽ không cắt qua hình
+    if (!cutHappened) { 
+        strokePoints = []; 
+        triggerShake(5);
+        floatingTexts.push(new FloatingText(width/2, height/2, "CẮT HỤT!", 0));
+        return; 
+    }
 
     polygons = newPieces; isAnimatingResult = true;
     let bestPiece = null; let bestMatchScore = 0;
@@ -657,12 +673,12 @@ function resolveCut() {
     polygons.forEach(p => { if (p === bestPiece) p.applyFeedback(percent); else p.setMiss(); });
 
     let text = ""; let pts = 0;
-    if (percent >= 90) {
+    if (percent >= 80) {
         combo++; pts = 100 * combo; text = `PERFECT! ${percent}%`; triggerShake(3);
         if(selectedMode === 'free') { pts += 50; text = `FREE MASTER! +150`; }
-    } else if (percent >= 75) {
-        combo = 1; pts = 60; text = `GOOD ${percent}%`;
     } else if (percent >= 60) {
+        combo = 1; pts = 60; text = `GOOD ${percent}%`;
+    } else if (percent >= 40) {
         combo = 1; pts = 30; text = `ALMOST ${percent}%`;
     } else {
         combo = 0; text = `FAIL ${percent}%`; triggerShake(10);
@@ -674,7 +690,7 @@ function resolveCut() {
     else floatingTexts.push(new FloatingText(width/2, height/2, text, percent));
 
     setTimeout(() => {
-        if (percent < 60) {
+        if (percent < 40) {
             gameState = 'GAMEOVER';
             document.getElementById('final-score').innerText = score;
             document.getElementById('fail-match-rate').innerText = `Độ khớp: ${percent}%`;
@@ -757,7 +773,6 @@ window.addEventListener('mouseup', handleEnd); window.addEventListener('touchend
  * --- RENDER LOOP ---
  */
 function animate() {
-    // Chỉ clear và vẽ lại nếu đang trong màn hình chơi (tối ưu hiệu suất)
     if (gameState === 'PLAYING') {
         ctx.clearRect(0, 0, width, height);
 
@@ -767,13 +782,9 @@ function animate() {
             shakeAmount *= 0.8; if (shakeAmount < 0.5) shakeAmount = 0;
         }
 
-        // Background Particles
         particles.forEach(p => { p.update(width, height); p.draw(ctx); });
-
-        // Vẽ khối
         polygons.forEach(poly => { poly.update(); poly.draw(ctx); });
 
-        // Vẽ đường nét cắt (Preview / Drawing)
         if (isDragging && strokePoints.length > 1) {
             ctx.beginPath();
             const start = strokePoints[0]; const end = strokePoints[strokePoints.length - 1];
