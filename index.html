@@ -41,7 +41,7 @@
         /* Effects */
         #screen-flash { position: absolute; inset: 0; background: white; opacity: 0; pointer-events: none; z-index: 50; transition: opacity 0.1s; }
         #fever-overlay {
-            position: absolute; inset: 0; background: radial-gradient(circle, rgba(239, 68, 68, 0) 40%, rgba(239, 68, 68, 0.15) 100%);
+            position: absolute; inset: 0; background: radial-gradient(circle, rgba(239, 68, 68, 0) 40%, rgba(239, 68, 68, 0.2) 100%);
             opacity: 0; pointer-events: none; z-index: 5; transition: opacity 0.3s;
             animation: feverPulse 1s infinite alternate;
         }
@@ -140,6 +140,10 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
         }
+
+        /* Thêm hiệu ứng nhấp nháy cho text báo lỗi */
+        .blink-text { animation: blink 0.5s infinite alternate; }
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.2; } }
     </style>
 </head>
 <body>
@@ -211,7 +215,7 @@
             </div>
             
             <div class="flex gap-4">
-                <button onclick="showMenu()" class="px-6 py-4 bg-slate-700 text-white rounded-full font-bold hover:bg-slate-600 transition-all shadow-lg">MENU</button>
+                <button onclick="showMenu()" class="px-6 py-4 bg-slate-700 text-white rounded-full font-bold hover:bg-slate-600 transition-all shadow-lg" onclick="AudioSys.playClick()">MENU</button>
                 <button onclick="startGame()" class="px-10 py-4 bg-sky-500 text-white rounded-full font-black text-xl tracking-wider hover:bg-sky-400 hover:scale-105 active:scale-95 transition-all shadow-[0_0_30px_rgba(56,189,248,0.5)]">CHƠI LẠI</button>
             </div>
         </div>
@@ -220,6 +224,50 @@
     <canvas id="match-canvas" width="100" height="100"></canvas>
 
 <script>
+/**
+ * --- HỆ THỐNG ÂM THANH (WEB AUDIO API SYNTHESIZER) ---
+ * Tạo âm thanh 8-bit arcade trực tiếp không cần file ngoài
+ */
+const AudioSys = {
+    ctx: null,
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    },
+    playTone(freq, type, duration, vol=0.1, sweep=0) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        if (sweep) osc.frequency.exponentialRampToValueAtTime(freq * sweep, this.ctx.currentTime + duration);
+        gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + duration);
+    },
+    playClick() { this.playTone(600, 'sine', 0.1, 0.1); },
+    playSlash() { this.playTone(800, 'triangle', 0.15, 0.15, 0.2); },
+    playImpact() { this.playTone(100, 'square', 0.2, 0.2, 0.1); }, // Âm trầm đục khi cắt trúng
+    playScan() { this.playTone(1200, 'sawtooth', 0.05, 0.02); }, // Tít tít nhẹ
+    playPerfect() { 
+        this.playTone(400, 'sine', 0.1, 0.1); 
+        setTimeout(() => this.playTone(600, 'sine', 0.1, 0.1), 100); 
+        setTimeout(() => this.playTone(800, 'sine', 0.3, 0.15), 200); 
+    },
+    playGood() { 
+        this.playTone(400, 'square', 0.1, 0.1); 
+        setTimeout(() => this.playTone(600, 'square', 0.2, 0.1), 100); 
+    },
+    playAlmost() { this.playTone(300, 'sawtooth', 0.2, 0.1); },
+    playFail() { this.playTone(150, 'sawtooth', 0.5, 0.2, 0.5); }
+};
+
 /**
  * --- DYNAMIC SHAPE GENERATOR (100% LOGICAL CUTS) ---
  */
@@ -298,7 +346,7 @@ const MathUtils = {
 };
 
 /**
- * --- ADVANCED IOU (CHUẨN HÓA VỀ TỶ LỆ GỐC) ---
+ * --- ADVANCED IOU ---
  */
 function calculateIoU(polyVertices, targetObj, baseSize) {
     const mCanvas = document.getElementById('match-canvas');
@@ -307,20 +355,17 @@ function calculateIoU(polyVertices, targetObj, baseSize) {
 
     const centroid = MathUtils.getCentroid(polyVertices);
     
-    // Bước 1: Vẽ Hình của người chơi. Tịnh tiến tâm về giữa Canvas ẩn (50,50), Scale xuống bằng BaseSize để map vào khoảng [-1, 1]
     mCtx.fillStyle = '#0000FF'; mCtx.beginPath();
     polyVertices.forEach((p, i) => {
-        const nx = 50 + ((p.x - centroid.x) / baseSize) * 40; // 40 là bán kính vẽ trong ô 100x100
+        const nx = 50 + ((p.x - centroid.x) / baseSize) * 40; 
         const ny = 50 + ((p.y - centroid.y) / baseSize) * 40;
         if (i === 0) mCtx.moveTo(nx, ny); else mCtx.lineTo(nx, ny);
     });
     mCtx.closePath(); mCtx.fill();
 
-    // Bước 2: Vẽ Target (Mặc định nó đã ở tọa độ chuẩn [-1, 1])
     mCtx.globalCompositeOperation = 'screen'; mCtx.fillStyle = '#FF0000'; mCtx.beginPath();
     targetObj.draw(mCtx, 50, 50, 40); mCtx.fill(); mCtx.globalCompositeOperation = 'source-over';
 
-    // Tính Pixel Trùng
     const imageData = mCtx.getImageData(0, 0, 100, 100).data;
     let intersection = 0; let union = 0;
     for (let i = 0; i < imageData.length; i += 4) {
@@ -410,30 +455,47 @@ class PolygonArea {
     }
 }
 
+// Float text points (e.g. "+100")
+class FloatingText {
+    constructor(x, y, text, color, isScore = false) {
+        this.x = x; this.y = y; this.text = text;
+        this.opacity = 1; this.life = 40; this.color = color;
+        this.size = isScore ? 45 : 30;
+        this.vy = isScore ? -4 : -2;
+    }
+    update() { this.y += this.vy; this.opacity -= 1/this.life; return this.opacity > 0; }
+    draw(ctx) {
+        ctx.save(); ctx.globalAlpha = Math.max(0, this.opacity);
+        ctx.fillStyle = this.color; ctx.font = `900 ${this.size}px 'Montserrat'`;
+        ctx.textAlign = 'center'; ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+        ctx.fillText(this.text, this.x, this.y); ctx.restore();
+    }
+}
+
 /**
  * --- GAME STATE & LOGIC ---
  */
-let gameState = 'MENU'; // MENU, PLAYING, ANALYZING, GAMEOVER
+let gameState = 'MENU'; 
 const canvasWrapper = document.getElementById('canvas-wrapper');
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const tCtx = document.getElementById('target-canvas').getContext('2d');
 
 let width, height;
-let polygons = [], slashes = [], explosions = [];
+let polygons = [], slashes = [], explosions = [], floatingTexts = [];
 let isDragging = false, score = 0, combo = 0, shakeAmount = 0;
+let hitStopFrames = 0; 
 
 let currentTarget = null, activeModes = [], selectedMode = '', strokePoints = [];
-let baseSquareSize = 0; // Để tính tỷ lệ chính xác
+let baseSquareSize = 0; 
 
-// Timer System
-const MAX_TIME = 100; let timeLeft = MAX_TIME; let timeDropRate = 0.05; // Giảm chậm lại
+const MAX_TIME = 100; let timeLeft = MAX_TIME; let timeDropRate = 0.04; 
 
-// Analysis System
 let analysisTargetShape = null;
 let analysisMatchScore = 0;
 let analysisDisplayScore = 0;
 let analysisTimer = 0;
+let lastScanTime = 0;
 
 function resizeCanvas() {
     width = canvasWrapper.clientWidth; height = canvasWrapper.clientHeight;
@@ -445,6 +507,7 @@ function flashScreen() { const f = document.getElementById('screen-flash'); f.st
 
 function showMenu() {
     gameState = 'MENU';
+    AudioSys.init(); AudioSys.playClick();
     document.getElementById('main-menu').classList.remove('hidden-screen');
     document.getElementById('game-ui').classList.add('hidden-screen');
     document.getElementById('game-over').classList.add('hidden-screen');
@@ -474,12 +537,14 @@ function updateUI() {
 
 window.selectMode = function(index) {
     if (gameState !== 'PLAYING') return;
+    AudioSys.playClick();
     selectedMode = activeModes[index];
     document.getElementById('btn-mode-0').classList.toggle('active', index === 0);
     document.getElementById('btn-mode-1').classList.toggle('active', index === 1);
 };
 
 function startGame() {
+    AudioSys.init(); AudioSys.playClick();
     gameState = 'PLAYING';
     document.getElementById('main-menu').classList.add('hidden-screen');
     document.getElementById('game-over').classList.add('hidden-screen');
@@ -488,6 +553,7 @@ function startGame() {
 }
 
 function gameOver(reason) {
+    AudioSys.playFail();
     gameState = 'GAMEOVER'; document.getElementById('fever-overlay').style.opacity = 0;
     document.getElementById('final-score').innerText = score;
     document.getElementById('go-title').innerText = timeLeft <= 0 ? "HẾT GIỜ!" : "THẤT BẠI!";
@@ -496,7 +562,7 @@ function gameOver(reason) {
 }
 
 function startNextLevel() {
-    gameState = 'PLAYING'; polygons = []; strokePoints = [];
+    gameState = 'PLAYING'; polygons = []; strokePoints = []; hitStopFrames = 0;
     document.getElementById('analysis-overlay').classList.remove('active');
     
     currentTarget = ShapeGenerator.getRandomTarget(); drawTargetUI();
@@ -575,6 +641,7 @@ function resolveCut() {
         finalPath = extrapolatedPath;
     }
 
+    AudioSys.playSlash();
     slashes.push(new SlashEffect(finalPath, MODES[selectedMode].color));
 
     let newPieces = []; let cutHappened = false;
@@ -583,28 +650,31 @@ function resolveCut() {
         if (result.length > 1) cutHappened = true; newPieces.push(...result);
     });
 
-    if (!cutHappened) { strokePoints = []; triggerShake(5); return; }
+    if (!cutHappened) { 
+        strokePoints = []; triggerShake(5); 
+        floatingTexts.push(new FloatingText(width/2, height/2, "HỤT!", "#ef4444", false));
+        return; 
+    }
 
     polygons = newPieces; 
+    hitStopFrames = 8; // Kích hoạt ngưng đọng thời gian (Hit-stop)
+    AudioSys.playImpact();
+
     let bestPiece = null; let bestMatchScore = 0;
-    
-    // Tính toán Exact Scale IoU
     polygons.forEach(poly => {
         const matchScore = calculateIoU(poly.vertices, currentTarget, baseSquareSize);
         if (matchScore > bestMatchScore) { bestMatchScore = matchScore; bestPiece = poly; }
     });
 
-    // START ANALYSIS PHASE
     gameState = 'ANALYZING';
     analysisMatchScore = Math.min(100, Math.round(bestMatchScore));
     analysisDisplayScore = 0;
-    analysisTimer = 60; // 1 giây chạy anim
+    analysisTimer = 45; // Đẩy nhanh thời gian quét
     analysisTargetShape = bestPiece;
 
     polygons.forEach(p => { 
         if (p === bestPiece) {
             p.setAnalysisMode();
-            // Dịch mảnh ghép tốt nhất vào giữa màn hình để phân tích
             const cx = width / 2; const cy = height / 2;
             const dx = cx - p.centroid.x; const dy = cy - p.centroid.y;
             p.vertices = p.vertices.map(v => ({ x: v.x + dx, y: v.y + dy }));
@@ -615,7 +685,7 @@ function resolveCut() {
     });
 
     document.getElementById('analysis-overlay').classList.add('active');
-    triggerShake(5);
+    triggerShake(8);
 }
 
 function processAnalysisResult() {
@@ -624,17 +694,21 @@ function processAnalysisResult() {
 
     if (pct >= 80) {
         combo++; pts = 100 * combo; text = `PERFECT!`; color = '#10b981';
-        triggerShake(10); flashScreen();
+        triggerShake(12); flashScreen();
         explosions.push(new Explosion(width/2, height/2, '#10b981'));
         timeLeft = Math.min(MAX_TIME, timeLeft + 30);
+        AudioSys.playPerfect();
     } else if (pct >= 60) {
         combo = 1; pts = 60; text = `GOOD`; color = '#38bdf8';
         timeLeft = Math.min(MAX_TIME, timeLeft + 15);
+        AudioSys.playGood();
     } else if (pct >= 40) {
         combo = 1; pts = 30; text = `ALMOST`; color = '#fbbf24';
         timeLeft = Math.min(MAX_TIME, timeLeft + 5);
+        AudioSys.playAlmost();
     } else {
         combo = 0; text = `FAIL`; color = '#ef4444'; triggerShake(15);
+        AudioSys.playFail();
     }
 
     score += pts; updateUI();
@@ -643,13 +717,18 @@ function processAnalysisResult() {
     document.getElementById('scan-percent').style.background = `linear-gradient(to bottom, #fff, ${color})`;
     document.getElementById('scan-percent').style.webkitBackgroundClip = 'text';
 
+    // Bắn điểm số lên màn hình
+    if(pts > 0) {
+        floatingTexts.push(new FloatingText(width/2, height/2 - 50, `+${pts}`, color, true));
+    }
+
     setTimeout(() => {
-        if (pct < 40) gameOver("Độ chính xác dưới mức sinh tồn (< 40%)");
+        if (pct < 40) gameOver("Cắt quá sai lệch (< 40%)");
         else {
             timeDropRate += 0.003; 
             startNextLevel();
         }
-    }, 800);
+    }, 600); // Rút ngắn thời gian chờ kết quả -> màn mới
 }
 
 /**
@@ -663,17 +742,19 @@ function getMousePos(e) {
 }
 
 canvas.addEventListener('mousedown', (e) => {
-    if (gameState !== 'PLAYING') return;
+    AudioSys.init();
+    if (gameState !== 'PLAYING' || hitStopFrames > 0) return;
     isDragging = true; strokePoints = [getMousePos(e)];
 });
 canvas.addEventListener('touchstart', (e) => {
     if (e.target === canvas) e.preventDefault();
-    if (gameState !== 'PLAYING') return;
+    AudioSys.init();
+    if (gameState !== 'PLAYING' || hitStopFrames > 0) return;
     isDragging = true; strokePoints = [getMousePos(e)];
 }, {passive: false});
 
 function moveDraw(e) {
-    if (!isDragging) return;
+    if (!isDragging || hitStopFrames > 0) return;
     const pos = getMousePos(e); const lastPoint = strokePoints[strokePoints.length - 1];
     if (MathUtils.dist(lastPoint, pos) > 5) strokePoints.push(pos);
 }
@@ -694,7 +775,7 @@ function animate() {
     if (gameState === 'PLAYING' || gameState === 'ANALYZING') {
         ctx.clearRect(0, 0, width, height);
 
-        if (gameState === 'PLAYING') {
+        if (gameState === 'PLAYING' && hitStopFrames <= 0) {
             timeLeft -= timeDropRate;
             const timerBar = document.getElementById('timer-bar');
             timerBar.style.width = `${Math.max(0, timeLeft)}%`;
@@ -708,8 +789,18 @@ function animate() {
             shakeAmount *= 0.8; if (shakeAmount < 0.5) shakeAmount = 0;
         }
 
+        // Logic Hit-Stop
+        if (hitStopFrames > 0) {
+            hitStopFrames--;
+            // Làm tối màn hình nhẹ tạo hiệu ứng Focus
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(0,0,width,height);
+        } else {
+            polygons.forEach(poly => poly.update());
+        }
+
         // Draw everything
-        polygons.forEach(poly => { poly.update(); poly.draw(ctx); });
+        polygons.forEach(poly => poly.draw(ctx));
 
         // Draw Blueprint Target in Analysis Mode
         if (gameState === 'ANALYZING' && analysisTargetShape) {
@@ -724,13 +815,17 @@ function animate() {
             // Animate Score Counting
             if (analysisTimer > 0) {
                 analysisTimer--;
-                analysisDisplayScore += (analysisMatchScore - analysisDisplayScore) * 0.15;
+                analysisDisplayScore += (analysisMatchScore - analysisDisplayScore) * 0.2;
                 document.getElementById('scan-percent').innerText = `${Math.round(analysisDisplayScore)}%`;
                 document.getElementById('scan-percent').style.background = `linear-gradient(to bottom, #fff, #94a3b8)`;
                 document.getElementById('scan-percent').style.webkitBackgroundClip = 'text';
-                document.getElementById('scan-status').innerText = "ANALYZING...";
+                document.getElementById('scan-status').innerText = "PHÂN TÍCH...";
                 document.getElementById('scan-status').style.color = '#94a3b8';
                 
+                // Tiếng tít tít khi quét
+                const now = Date.now();
+                if (now - lastScanTime > 50) { AudioSys.playScan(); lastScanTime = now; }
+
                 if (analysisTimer <= 0) {
                     analysisDisplayScore = analysisMatchScore;
                     document.getElementById('scan-percent').innerText = `${analysisMatchScore}%`;
@@ -763,6 +858,7 @@ function animate() {
 
         for (let i = slashes.length - 1; i >= 0; i--) { if (!slashes[i].update()) slashes.splice(i, 1); else slashes[i].draw(ctx); }
         for (let i = explosions.length - 1; i >= 0; i--) { if (!explosions[i].update()) explosions.splice(i, 1); else explosions[i].draw(ctx); }
+        for (let i = floatingTexts.length - 1; i >= 0; i--) { if (!floatingTexts[i].update()) floatingTexts.splice(i, 1); else floatingTexts[i].draw(ctx); }
 
         ctx.restore();
     }
